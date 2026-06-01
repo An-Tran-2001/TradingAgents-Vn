@@ -15,9 +15,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { useLanguage, type Language } from "@/contexts/language-context"
 
 export function SiteHeader({ onSettingsClick }: { onSettingsClick?: () => void }) {
   const [searchOpen, setSearchOpen] = React.useState(false)
+  const { language, setLanguage } = useLanguage()
 
   React.useEffect(() => {
     const down = (e: KeyboardEvent) => {
@@ -44,7 +46,7 @@ export function SiteHeader({ onSettingsClick }: { onSettingsClick?: () => void }
             <SearchTrigger onClick={() => setSearchOpen(true)} />
           </div>
           <div className="ml-auto flex items-center gap-2">
-            <Select defaultValue="vi">
+            <Select value={language} onValueChange={(val) => setLanguage(val as Language)}>
               <SelectTrigger className="w-[120px] h-8 text-xs hidden sm:flex">
                 <SelectValue placeholder="Language" />
               </SelectTrigger>

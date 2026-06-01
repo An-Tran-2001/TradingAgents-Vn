@@ -3,6 +3,7 @@ import "./globals.css";
 
 import { ThemeProvider } from "@/components/theme-provider";
 import { SidebarConfigProvider } from "@/contexts/sidebar-context";
+import { LanguageProvider } from "@/contexts/language-context";
 import { inter } from "@/lib/fonts";
 
 export const metadata: Metadata = {
@@ -19,9 +20,11 @@ export default function RootLayout({
     <html lang="en" className={`${inter.variable} antialiased`}>
       <body className={inter.className}>
         <ThemeProvider defaultTheme="dark" storageKey="nextjs-ui-theme">
-          <SidebarConfigProvider>
-            {children}
-          </SidebarConfigProvider>
+          <LanguageProvider>
+            <SidebarConfigProvider>
+              {children}
+            </SidebarConfigProvider>
+          </LanguageProvider>
         </ThemeProvider>
       </body>
     </html>

@@ -7,11 +7,8 @@ import {
   Coins, 
   Cpu, 
   LineChart, 
-  MessageSquare, 
   Play, 
-  RotateCcw, 
   ShieldCheck, 
-  TrendingUp, 
   Users,
   Terminal,
   ChevronRight,
@@ -22,49 +19,40 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import Link from "next/link"
+import { useLanguage } from "@/contexts/language-context"
 
-// Steps mapping for Workflow Diagram
+// Steps mapping for Workflow Diagram (translated dynamically)
 const WORKFLOW_STEPS = [
   {
     id: "data",
-    label: "Data Ingestion",
     icon: Database,
-    description: "Fetches live price data, technical indicators, and social sentiment (Reddit, X, StockTwits).",
     color: "from-blue-500 to-cyan-500 animate-pulse",
     glow: "shadow-blue-500/20"
   },
   {
     id: "analysts",
-    label: "Analyst Team",
     icon: Users,
-    description: "Specialized agents run parallel research on Fundamentals, News, Sentiment & Technicals.",
     color: "from-cyan-500 to-teal-500",
     glow: "shadow-cyan-500/20",
     subAgents: ["Fundamentals Analyst", "Sentiment Analyst", "News Analyst", "Technical Analyst"]
   },
   {
     id: "researchers",
-    label: "Debate & Research",
     icon: Brain,
-    description: "Bull and Bear Researchers debate risks and upside. Research Manager weights the final consensus.",
     color: "from-purple-500 to-pink-500",
     glow: "shadow-purple-500/20",
     subAgents: ["Bull Researcher", "Bear Researcher", "Research Manager"]
   },
   {
     id: "risk",
-    label: "Risk & Execution",
     icon: ShieldCheck,
-    description: "Trader proposes sizing. Risk Management verifies bounds and Portfolio Manager signs off.",
     color: "from-orange-500 to-red-500",
     glow: "shadow-orange-500/20",
     subAgents: ["Trader Agent", "Risk Management", "Portfolio Manager"]
   },
   {
     id: "exchange",
-    label: "Order Execution",
     icon: Coins,
-    description: "Sends the approved transaction order to the Simulated Exchange broker for execution.",
     color: "from-green-500 to-emerald-500",
     glow: "shadow-green-500/20"
   }
@@ -72,6 +60,7 @@ const WORKFLOW_STEPS = [
 
 export default function HomeIntroPage() {
   const [activeStep, setActiveStep] = useState<string>("data")
+  const { t } = useLanguage()
 
   return (
     <div className="flex h-full w-full flex-col overflow-y-auto custom-scrollbar p-6 bg-background/30 relative">
@@ -84,27 +73,26 @@ export default function HomeIntroPage() {
           
           <div className="max-w-2xl space-y-4">
             <Badge variant="outline" className="border-primary/40 text-primary bg-primary/5 px-3 py-1 font-mono tracking-wider">
-              <Sparkles className="w-3.5 h-3.5 mr-1.5 animate-spin" /> VERSION 0.2.5
+              <Sparkles className="w-3.5 h-3.5 mr-1.5 animate-spin" /> {t("home.badge")}
             </Badge>
             
             <h1 className="text-3xl md:text-5xl font-black tracking-tight bg-gradient-to-r from-foreground via-foreground to-primary bg-clip-text text-transparent">
-              TradingAgents VN
+              {t("home.title")}
             </h1>
             
             <p className="text-lg text-muted-foreground leading-relaxed">
-              An AI-powered multi-agent financial trading framework mirroring real-world trading desks. 
-              Deploying specialized LLM agents from research analysts to risk managers cooperating to beat the market.
+              {t("home.description")}
             </p>
             
             <div className="flex flex-wrap gap-4 pt-2">
               <Button asChild className="bg-primary hover:bg-primary/95 text-background font-bold shadow-[0_0_20px_rgba(0,240,255,0.3)]">
                 <Link href="/research" className="flex items-center gap-2">
-                  <Play className="w-4 h-4 fill-current" /> Run Simulation Now
+                  <Play className="w-4 h-4 fill-current" /> {t("home.runSim")}
                 </Link>
               </Button>
               <Button asChild variant="outline" className="border-primary/20 hover:bg-primary/5 text-foreground">
                 <Link href="/jobs" className="flex items-center gap-2">
-                  <Terminal className="w-4 h-4" /> Manage Schedules
+                  <Terminal className="w-4 h-4" /> {t("home.manageSchedules")}
                 </Link>
               </Button>
             </div>
@@ -115,10 +103,10 @@ export default function HomeIntroPage() {
         <div className="space-y-6">
           <div>
             <h2 className="text-2xl font-bold tracking-tight text-foreground">
-              Standard Multi-Agent Workflow
+              {t("home.workflowTitle")}
             </h2>
             <p className="text-muted-foreground text-sm">
-              Click on each phase to discover the agents, roles, and collaborative decision pipeline.
+              {t("home.workflowDesc")}
             </p>
           </div>
 
@@ -154,7 +142,7 @@ export default function HomeIntroPage() {
                           <Icon className="w-5 h-5" />
                         </div>
                         <span className="text-[11px] font-bold tracking-tight uppercase group-hover:text-primary transition-colors">
-                          {step.label}
+                          {t(`home.step.${step.id}.label` as any)}
                         </span>
                       </button>
                     </React.Fragment>
@@ -171,17 +159,17 @@ export default function HomeIntroPage() {
                     <div>
                       <div className="flex items-center gap-2 mb-2">
                         <StepIcon className="w-5 h-5 text-primary" />
-                        <h3 className="font-bold text-base text-primary">{current.label}</h3>
+                        <h3 className="font-bold text-base text-primary">{t(`home.step.${current.id}.label` as any)}</h3>
                       </div>
                       <p className="text-sm text-muted-foreground leading-relaxed">
-                        {current.description}
+                        {t(`home.step.${current.id}.desc` as any)}
                       </p>
                     </div>
 
                     {current.subAgents && (
                       <div className="mt-4 pt-3 border-t border-border/20">
                         <div className="text-[10px] text-muted-foreground uppercase tracking-wider mb-2">
-                          Active Agents in this Phase:
+                          {t("home.activeAgents")}
                         </div>
                         <div className="flex flex-wrap gap-2">
                           {current.subAgents.map(sa => (
@@ -202,21 +190,21 @@ export default function HomeIntroPage() {
               <div className="space-y-4">
                 <div className="flex items-center gap-2">
                   <Cpu className="w-5 h-5 text-cyan-400" />
-                  <h3 className="font-bold text-sm uppercase tracking-wider text-muted-foreground">Framework Tech</h3>
+                  <h3 className="font-bold text-sm uppercase tracking-wider text-muted-foreground">{t("home.techTitle")}</h3>
                 </div>
 
                 <div className="space-y-3">
                   <div className="p-3.5 rounded-xl bg-muted/20 border border-border/30">
-                    <h4 className="font-bold text-xs text-foreground mb-1">State Persistence</h4>
+                    <h4 className="font-bold text-xs text-foreground mb-1">{t("home.techState")}</h4>
                     <p className="text-[11px] text-muted-foreground leading-relaxed">
-                      Utilizes SQLite Database checkpoints powered by LangGraph, enabling recovery or resume from intermediate crashed steps.
+                      {t("home.techStateDesc")}
                     </p>
                   </div>
 
                   <div className="p-3.5 rounded-xl bg-muted/20 border border-border/30">
-                    <h4 className="font-bold text-xs text-foreground mb-1">Self-Correction & Memory</h4>
+                    <h4 className="font-bold text-xs text-foreground mb-1">{t("home.techMemory")}</h4>
                     <p className="text-[11px] text-muted-foreground leading-relaxed">
-                      Feeds realized returns of past decisions into the Portfolio Manager prompt for continuous optimization.
+                      {t("home.techMemoryDesc")}
                     </p>
                   </div>
                 </div>
@@ -224,7 +212,7 @@ export default function HomeIntroPage() {
 
               <div className="pt-4 border-t border-border/30 mt-4">
                 <Link href="/research" className="text-xs text-primary flex items-center gap-1 hover:underline">
-                  Go to Command Center <ChevronRight className="w-3 h-3" />
+                  {t("home.goConsole")} <ChevronRight className="w-3 h-3" />
                 </Link>
               </div>
             </div>
@@ -235,10 +223,10 @@ export default function HomeIntroPage() {
         <div className="space-y-6">
           <div>
             <h2 className="text-2xl font-bold tracking-tight text-foreground">
-              Core Agent Teams
+              {t("home.teamsTitle")}
             </h2>
             <p className="text-muted-foreground text-sm">
-              Each team mirrors standard investment bank structures.
+              {t("home.teamsDesc")}
             </p>
           </div>
 
@@ -248,9 +236,9 @@ export default function HomeIntroPage() {
                 <div className="w-10 h-10 rounded-xl bg-cyan-500/10 flex items-center justify-center border border-cyan-500/20 text-cyan-400">
                   <LineChart className="w-5 h-5" />
                 </div>
-                <h3 className="font-bold text-sm">1. Analyst Team</h3>
+                <h3 className="font-bold text-sm">{t("home.teamAnalystTitle")}</h3>
                 <p className="text-xs text-muted-foreground leading-relaxed">
-                  Ingests technical indicators, macroeconomic updates, news stories, and stock chatter into a single, comprehensive market reading.
+                  {t("home.teamAnalystDesc")}
                 </p>
               </div>
             </Card>
@@ -260,9 +248,9 @@ export default function HomeIntroPage() {
                 <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center border border-purple-500/20 text-purple-400">
                   <Brain className="w-5 h-5" />
                 </div>
-                <h3 className="font-bold text-sm">2. Research Team</h3>
+                <h3 className="font-bold text-sm">{t("home.teamResearchTitle")}</h3>
                 <p className="text-xs text-muted-foreground leading-relaxed">
-                  Employs structured debates between Bull and Bear researchers to challenge bias and balance risk, managed by the Research Manager.
+                  {t("home.teamResearchDesc")}
                 </p>
               </div>
             </Card>
@@ -272,9 +260,9 @@ export default function HomeIntroPage() {
                 <div className="w-10 h-10 rounded-xl bg-orange-500/10 flex items-center justify-center border border-orange-500/20 text-orange-400">
                   <Bot className="w-5 h-5" />
                 </div>
-                <h3 className="font-bold text-sm">3. Trader Agent</h3>
+                <h3 className="font-bold text-sm">{t("home.teamTraderTitle")}</h3>
                 <p className="text-xs text-muted-foreground leading-relaxed">
-                  Synthesizes reports from research and analysts to construct order proposals, defining entry, exit targets and timing.
+                  {t("home.teamTraderDesc")}
                 </p>
               </div>
             </Card>
@@ -284,9 +272,9 @@ export default function HomeIntroPage() {
                 <div className="w-10 h-10 rounded-xl bg-green-500/10 flex items-center justify-center border border-green-500/20 text-green-400">
                   <ShieldCheck className="w-5 h-5" />
                 </div>
-                <h3 className="font-bold text-sm">4. Portfolio & Risk</h3>
+                <h3 className="font-bold text-sm">{t("home.teamPortfolioTitle")}</h3>
                 <p className="text-xs text-muted-foreground leading-relaxed">
-                  Enforces position sizing bounds, verifies drawdown risk, and grants final execution sign-off before trades land on-chain.
+                  {t("home.teamPortfolioDesc")}
                 </p>
               </div>
             </Card>

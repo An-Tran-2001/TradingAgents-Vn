@@ -73,7 +73,27 @@ const data = {
   ],
 }
 
+import { useLanguage } from "@/contexts/language-context"
+
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const { t } = useLanguage()
+
+  const translatedNavGroups = React.useMemo(() => {
+    return data.navGroups.map((group) => {
+      const groupKey = `sidebar.${group.label.toLowerCase()}` as any
+      return {
+        label: t(groupKey) || group.label,
+        items: group.items.map((item) => {
+          const itemKey = `sidebar.${item.title.toLowerCase().replace(" ", "")}` as any
+          return {
+            ...item,
+            title: t(itemKey) || item.title,
+          }
+        }),
+      }
+    })
+  }, [t])
+
   return (
     <Sidebar {...props}>
       <SidebarHeader>
@@ -85,8 +105,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   <Logo size={24} className="text-current" />
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-medium">Trading Agents VN</span>
-                  <span className="truncate text-xs">AI Finance System</span>
+                  <span className="truncate font-medium">{t("sidebar.title")}</span>
+                  <span className="truncate text-xs">{t("sidebar.subtitle")}</span>
                 </div>
               </Link>
             </SidebarMenuButton>
@@ -94,7 +114,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        {data.navGroups.map((group) => (
+        {translatedNavGroups.map((group) => (
           <NavMain key={group.label} label={group.label} items={group.items} />
         ))}
       </SidebarContent>

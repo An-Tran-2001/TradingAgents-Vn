@@ -9,6 +9,7 @@ import {
   ShieldAlert, Briefcase
 } from "lucide-react"
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
+import { useLanguage } from "@/contexts/language-context"
 
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -136,6 +137,7 @@ const cliLogsData = [
 ]
 
 export default function JobsPage() {
+  const { t } = useLanguage()
   const [jobs, setJobs] = useState<TradingJob[]>(initialJobs)
   const [isSheetOpen, setIsSheetOpen] = useState(false)
   const [editingJob, setEditingJob] = useState<TradingJob | null>(null)
@@ -238,8 +240,8 @@ export default function JobsPage() {
     } else {
       const newJob: TradingJob = {
         id: `job-${Date.now()}`,
-        ticker: formData.ticker.toUpperCase(),
         ...formData,
+        ticker: formData.ticker.toUpperCase(),
         status: "active",
         lastRun: "Never",
         nextRun: "Pending schedule",
@@ -272,15 +274,15 @@ export default function JobsPage() {
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
               <CalendarClock className="h-6 w-6 text-primary" />
-              Scheduled Trading Jobs
+              {t("jobs.title")}
             </h1>
             <p className="text-muted-foreground mt-1 text-sm">
-              Control Center for multi-agent automated pipelines.
+              {t("jobs.subtitle")}
             </p>
           </div>
           <Button onClick={openCreateSheet} className="gap-2 bg-primary/20 text-primary hover:bg-primary/30 border border-primary/30 shadow-[0_0_15px_rgba(6,182,212,0.2)]">
             <Plus className="h-4 w-4" />
-            Create Schedule
+            {t("jobs.create")}
           </Button>
         </div>
 
@@ -301,7 +303,7 @@ export default function JobsPage() {
             </Card>
             <Card className="bg-card/40 backdrop-blur-md border-primary/20">
               <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Concurrent Jobs</CardTitle>
+                <CardTitle className="text-sm font-medium text-muted-foreground">{t("jobs.activeJobs")}</CardTitle>
                 <Layers className="h-4 w-4 text-blue-500" />
               </CardHeader>
               <CardContent>
@@ -321,7 +323,7 @@ export default function JobsPage() {
             </Card>
             <Card className="bg-card/40 backdrop-blur-md border-primary/20">
               <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Total Schedules</CardTitle>
+                <CardTitle className="text-sm font-medium text-muted-foreground">{t("jobs.completedJobs")}</CardTitle>
                 <CalendarClock className="h-4 w-4 text-pink-500" />
               </CardHeader>
               <CardContent>
@@ -336,7 +338,7 @@ export default function JobsPage() {
             <Card className="bg-card/40 backdrop-blur-md border-primary/20 h-full flex flex-col">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-primary" /> Total Job Duration (7D)
+                  <Clock className="w-4 h-4 text-primary" /> {t("jobs.runDuration")} (7D)
                 </CardTitle>
               </CardHeader>
               <CardContent className="flex-1 pb-4 px-2 min-h-[160px]">
@@ -360,12 +362,12 @@ export default function JobsPage() {
             <Table>
               <TableHeader className="bg-muted/50 whitespace-nowrap">
                 <TableRow>
-                  <TableHead className="w-[120px]">Ticker</TableHead>
-                  <TableHead>Config</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Schedule</TableHead>
-                  <TableHead>Airflow History (7D)</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead className="w-[120px]">{t("jobs.tableTicker")}</TableHead>
+                  <TableHead>{t("research.settings")}</TableHead>
+                  <TableHead>{t("jobs.tableStatus")}</TableHead>
+                  <TableHead>{t("jobs.tableSchedule")}</TableHead>
+                  <TableHead>{t("jobs.tableHistory")}</TableHead>
+                  <TableHead className="text-right">{t("jobs.tableActions")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -384,19 +386,19 @@ export default function JobsPage() {
                       </TableCell>
                       <TableCell>
                         <div className="flex flex-col gap-1">
-                          <span className="text-xs text-muted-foreground">Depth: <span className="text-foreground">{job.depth}</span></span>
+                          <span className="text-xs text-muted-foreground">{t("research.depth")}: <span className="text-foreground">{job.depth}</span></span>
                           <span className="text-xs text-muted-foreground">Agents: <span className="text-foreground">{job.agents.length}</span></span>
                         </div>
                       </TableCell>
                       <TableCell>
                         <Badge variant={job.status === "active" ? "default" : "secondary"} className={job.status === "active" ? "bg-primary/20 text-primary border-primary/30" : ""}>
-                          {job.status === "active" ? "Active" : "Paused"}
+                          {job.status === "active" ? (t("jobs.activeJobs").split(" ")[0]) : "Paused"}
                         </Badge>
                       </TableCell>
                       <TableCell>
                         <div className="flex flex-col gap-1">
                           <span className="text-sm">{job.frequency}</span>
-                          <span className="text-xs text-muted-foreground">Next: {job.nextRun}</span>
+                          <span className="text-xs text-muted-foreground">{t("jobs.tableNextRun")}: {job.nextRun}</span>
                         </div>
                       </TableCell>
                       <TableCell>
@@ -423,7 +425,7 @@ export default function JobsPage() {
                             className="h-8 px-2 text-xs border-primary/20 hover:border-primary/50 text-muted-foreground hover:text-primary mr-2"
                             onClick={() => viewLogs(job)}
                           >
-                            <TerminalSquare className="h-3.5 w-3.5 mr-1" /> View Logs
+                            <TerminalSquare className="h-3.5 w-3.5 mr-1" /> {t("jobs.viewLogs")}
                           </Button>
 
                           <Button 
@@ -470,19 +472,21 @@ export default function JobsPage() {
           <SheetHeader>
             <SheetTitle className="text-xl flex items-center gap-2">
               <CalendarClock className="w-5 h-5 text-primary" />
-              {editingJob ? "Edit Scheduled Job" : "Create New Schedule"}
+              {editingJob ? (t("jobs.create").includes("Tạo") ? "Cập Nhật Lịch Trình" : "Edit Scheduled Job") : t("jobs.create")}
             </SheetTitle>
             <SheetDescription>
-              Configure advanced scheduling parameters for your automated trading agent pipeline.
+              {t("jobs.create").includes("Tạo") 
+                ? "Cấu hình các tham số lập lịch nâng cao cho luồng xử lý tự động của agent AI." 
+                : "Configure advanced scheduling parameters for your automated trading agent pipeline."}
             </SheetDescription>
           </SheetHeader>
 
           <div className="flex-1 py-6 space-y-6">
             <div className="space-y-4 border border-border/50 rounded-lg p-4 bg-card/30">
-              <h3 className="font-semibold text-sm text-primary flex items-center gap-2"><Activity className="w-4 h-4"/> Target & Schedule</h3>
+              <h3 className="font-semibold text-sm text-primary flex items-center gap-2"><Activity className="w-4 h-4"/> {t("jobs.create").includes("Tạo") ? "Mục Tiêu & Lịch Trình" : "Target & Schedule"}</h3>
               <div className="grid grid-cols-1 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="ticker">Asset Ticker</Label>
+                  <Label htmlFor="ticker">{t("research.ticker")}</Label>
                   <Input 
                     id="ticker" 
                     placeholder="e.g. BTC-USD, AAPL" 
@@ -493,7 +497,7 @@ export default function JobsPage() {
                 </div>
                 
                 <div className="space-y-2">
-                  <Label>Cron / Frequency</Label>
+                  <Label>{t("jobs.tableSchedule")}</Label>
                   <Select 
                     value={formData.frequency} 
                     onValueChange={(val) => setFormData({...formData, frequency: val})}
@@ -513,7 +517,7 @@ export default function JobsPage() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="start-date">Start Date</Label>
+                    <Label htmlFor="start-date">{t("jobs.create").includes("Tạo") ? "Ngày Bắt Đầu" : "Start Date"}</Label>
                     <Input 
                       id="start-date" 
                       type="date"
@@ -523,7 +527,7 @@ export default function JobsPage() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="end-date">End Date (Optional)</Label>
+                    <Label htmlFor="end-date">{t("jobs.create").includes("Tạo") ? "Ngày Kết Thúc (Tùy chọn)" : "End Date (Optional)"}</Label>
                     <Input 
                       id="end-date" 
                       type="date"
@@ -537,29 +541,29 @@ export default function JobsPage() {
             </div>
 
             <div className="space-y-4 border border-border/50 rounded-lg p-4 bg-card/30">
-              <h3 className="font-semibold text-sm text-primary flex items-center gap-2"><Network className="w-4 h-4"/> Agent Configuration</h3>
+              <h3 className="font-semibold text-sm text-primary flex items-center gap-2"><Network className="w-4 h-4"/> {t("jobs.create").includes("Tạo") ? "Cấu Hình Đội Ngũ Agent" : "Agent Configuration"}</h3>
               
               <div className="space-y-3">
-                <Label>Participating Teams</Label>
+                <Label>{t("jobs.create").includes("Tạo") ? "Nhóm Tham Gia" : "Participating Teams"}</Label>
                 <div className="flex flex-col gap-3 p-3 border border-border/40 rounded-md bg-background/30">
                   <div className="flex items-center space-x-2">
                     <Checkbox id="agent-analyst" checked={true} disabled />
-                    <label htmlFor="agent-analyst" className="text-sm font-medium leading-none cursor-pointer">Analyst Team (Full Suite)</label>
+                    <label htmlFor="agent-analyst" className="text-sm font-medium leading-none cursor-pointer">{t("reports.analystTeam")} (Full Suite)</label>
                   </div>
                   <div className="flex items-center space-x-2">
                     <Checkbox id="agent-research" checked={true} disabled />
-                    <label htmlFor="agent-research" className="text-sm font-medium leading-none cursor-pointer">Research Team (Debate)</label>
+                    <label htmlFor="agent-research" className="text-sm font-medium leading-none cursor-pointer">{t("reports.researchTeam")} (Debate)</label>
                   </div>
                   <div className="flex items-center space-x-2">
                     <Checkbox id="agent-trader" checked={true} disabled />
-                    <label htmlFor="agent-trader" className="text-sm font-medium leading-none cursor-pointer">Risk & Execution Team</label>
+                    <label htmlFor="agent-trader" className="text-sm font-medium leading-none cursor-pointer">{t("reports.executionTeam")}</label>
                   </div>
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Analysis Depth</Label>
+                  <Label>{t("research.depth")}</Label>
                   <Select 
                     value={formData.depth} 
                     onValueChange={(val) => setFormData({...formData, depth: val})}
@@ -568,15 +572,15 @@ export default function JobsPage() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Shallow">Shallow</SelectItem>
-                      <SelectItem value="Medium">Medium</SelectItem>
-                      <SelectItem value="Deep">Deep</SelectItem>
+                      <SelectItem value="Shallow">{t("research.depthShallow").split(" ")[0]}</SelectItem>
+                      <SelectItem value="Medium">{t("research.depthMedium").split(" ")[0]}</SelectItem>
+                      <SelectItem value="Deep">{t("research.depthDeepOption").split(" ")[0]}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 
                 <div className="space-y-2">
-                  <Label>Reasoning Level</Label>
+                  <Label>{t("research.reasoningEffort")}</Label>
                   <Select 
                     value={formData.reasoning} 
                     onValueChange={(val) => setFormData({...formData, reasoning: val})}
@@ -585,9 +589,9 @@ export default function JobsPage() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Low">Low</SelectItem>
-                      <SelectItem value="Medium">Medium</SelectItem>
-                      <SelectItem value="High">High</SelectItem>
+                      <SelectItem value="Low">{t("research.effortLow").split(" ")[0]}</SelectItem>
+                      <SelectItem value="Medium">{t("research.effortMedium").split(" ")[0]}</SelectItem>
+                      <SelectItem value="High">{t("research.effortHigh").split(" ")[0]}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -597,9 +601,9 @@ export default function JobsPage() {
           </div>
 
           <SheetFooter className="pt-4 border-t border-border/50">
-            <Button variant="outline" onClick={() => setIsSheetOpen(false)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setIsSheetOpen(false)}>{t("jobs.create").includes("Tạo") ? "Hủy" : "Cancel"}</Button>
             <Button onClick={handleSave} disabled={!formData.ticker} className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-[0_0_15px_rgba(6,182,212,0.4)]">
-              {editingJob ? "Save Changes" : "Create Schedule"}
+              {editingJob ? (t("jobs.create").includes("Tạo") ? "Lưu Thay Đổi" : "Save Changes") : t("jobs.create")}
             </Button>
           </SheetFooter>
         </SheetContent>
@@ -629,32 +633,32 @@ export default function JobsPage() {
             {/* Left Column: Progress Tree */}
             <div className="w-[30%] lg:w-[25%] border-r border-primary/20 flex flex-col bg-background/50">
               <div className="py-2 text-center border-b border-primary/20 text-xs font-bold tracking-widest text-primary bg-primary/5">
-                PROGRESS
+                {t("jobs.create").includes("Tạo") ? "TIẾN TRÌNH" : "PROGRESS"}
               </div>
               <div className="flex-1 overflow-y-auto p-4 space-y-6 text-xs custom-scrollbar">
                 
                 {/* Team 1: Analyst */}
                 <div>
-                  <div className="text-muted-foreground uppercase mb-2 flex items-center gap-2"><Activity className="w-3 h-3"/> Team: Analyst</div>
+                  <div className="text-muted-foreground uppercase mb-2 flex items-center gap-2"><Activity className="w-3 h-3"/> {t("reports.analystTeam")}</div>
                   <div className="pl-4 border-l border-primary/20 space-y-3">
                     
                     <div className={`flex items-center justify-between transition-opacity duration-300 ${logAnimationStep >= 0 ? "opacity-100" : "opacity-40"}`}>
-                      <span className="text-foreground flex items-center gap-1.5"><FileText className="w-3.5 h-3.5 text-cyan-500"/> Fundamentals</span>
+                      <span className="text-foreground flex items-center gap-1.5"><FileText className="w-3.5 h-3.5 text-cyan-500"/> {t("reports.fundamentals")}</span>
                       {logAnimationStep >= 2 ? <Badge variant="outline" className="text-[10px] bg-green-500/10 text-green-500 border-green-500/30">completed</Badge> : logAnimationStep >= 1 ? <Badge variant="outline" className="text-[10px] bg-cyan-500/10 text-cyan-500 border-cyan-500/30 animate-pulse">in_progress</Badge> : <Badge variant="outline" className="text-[10px] bg-muted/10 text-muted-foreground border-border/30">waiting...</Badge>}
                     </div>
 
                     <div className={`flex items-center justify-between transition-opacity duration-300 ${logAnimationStep >= 1 ? "opacity-100" : "opacity-40"}`}>
-                      <span className="text-foreground flex items-center gap-1.5"><MessageSquare className="w-3.5 h-3.5 text-cyan-500"/> Sentiment</span>
+                      <span className="text-foreground flex items-center gap-1.5"><MessageSquare className="w-3.5 h-3.5 text-cyan-500"/> {t("reports.sentiment")}</span>
                       {logAnimationStep >= 3 ? <Badge variant="outline" className="text-[10px] bg-green-500/10 text-green-500 border-green-500/30">completed</Badge> : logAnimationStep >= 2 ? <Badge variant="outline" className="text-[10px] bg-cyan-500/10 text-cyan-500 border-cyan-500/30 animate-pulse">in_progress</Badge> : <Badge variant="outline" className="text-[10px] bg-muted/10 text-muted-foreground border-border/30">waiting...</Badge>}
                     </div>
 
                     <div className={`flex items-center justify-between transition-opacity duration-300 ${logAnimationStep >= 2 ? "opacity-100" : "opacity-40"}`}>
-                      <span className="text-foreground flex items-center gap-1.5"><Newspaper className="w-3.5 h-3.5 text-cyan-500"/> News Analyst</span>
+                      <span className="text-foreground flex items-center gap-1.5"><Newspaper className="w-3.5 h-3.5 text-cyan-500"/> {t("reports.newsAnalyst").split(" ")[0]}</span>
                       {logAnimationStep >= 4 ? <Badge variant="outline" className="text-[10px] bg-green-500/10 text-green-500 border-green-500/30">completed</Badge> : logAnimationStep >= 3 ? <Badge variant="outline" className="text-[10px] bg-cyan-500/10 text-cyan-500 border-cyan-500/30 animate-pulse">in_progress</Badge> : <Badge variant="outline" className="text-[10px] bg-muted/10 text-muted-foreground border-border/30">waiting...</Badge>}
                     </div>
 
                     <div className={`flex items-center justify-between transition-opacity duration-300 ${logAnimationStep >= 3 ? "opacity-100" : "opacity-40"}`}>
-                      <span className="text-foreground flex items-center gap-1.5"><Activity className="w-3.5 h-3.5 text-cyan-500"/> Technicals</span>
+                      <span className="text-foreground flex items-center gap-1.5"><Activity className="w-3.5 h-3.5 text-cyan-500"/> {t("reports.technicals")}</span>
                       {logAnimationStep >= 5 ? <Badge variant="outline" className="text-[10px] bg-green-500/10 text-green-500 border-green-500/30">completed</Badge> : logAnimationStep >= 4 ? <Badge variant="outline" className="text-[10px] bg-cyan-500/10 text-cyan-500 border-cyan-500/30 animate-pulse">in_progress</Badge> : <Badge variant="outline" className="text-[10px] bg-muted/10 text-muted-foreground border-border/30">waiting...</Badge>}
                     </div>
 
@@ -663,21 +667,21 @@ export default function JobsPage() {
 
                 {/* Team 2: Research */}
                 <div>
-                  <div className="text-muted-foreground uppercase mb-2 mt-2 flex items-center gap-2"><Network className="w-3 h-3"/> Team: Research</div>
+                  <div className="text-muted-foreground uppercase mb-2 mt-2 flex items-center gap-2"><Network className="w-3 h-3"/> {t("reports.researchTeam")}</div>
                   <div className="pl-4 border-l border-primary/20 space-y-3">
                     
                     <div className={`flex items-center justify-between transition-opacity duration-300 ${logAnimationStep >= 4 ? "opacity-100" : "opacity-40"}`}>
-                      <span className="text-foreground flex items-center gap-1.5"><TrendingUp className="w-3.5 h-3.5 text-pink-500"/> Bull Researcher</span>
+                      <span className="text-foreground flex items-center gap-1.5"><TrendingUp className="w-3.5 h-3.5 text-pink-500"/> {t("reports.bullResearcher").split(" ")[0]}</span>
                       {logAnimationStep >= 6 ? <Badge variant="outline" className="text-[10px] bg-green-500/10 text-green-500 border-green-500/30">completed</Badge> : logAnimationStep >= 5 ? <Badge variant="outline" className="text-[10px] bg-cyan-500/10 text-cyan-500 border-cyan-500/30 animate-pulse">in_progress</Badge> : <Badge variant="outline" className="text-[10px] bg-muted/10 text-muted-foreground border-border/30">waiting...</Badge>}
                     </div>
 
                     <div className={`flex items-center justify-between transition-opacity duration-300 ${logAnimationStep >= 5 ? "opacity-100" : "opacity-40"}`}>
-                      <span className="text-foreground flex items-center gap-1.5"><TrendingDown className="w-3.5 h-3.5 text-pink-500"/> Bear Researcher</span>
+                      <span className="text-foreground flex items-center gap-1.5"><TrendingDown className="w-3.5 h-3.5 text-pink-500"/> {t("reports.bearResearcher").split(" ")[0]}</span>
                       {logAnimationStep >= 7 ? <Badge variant="outline" className="text-[10px] bg-green-500/10 text-green-500 border-green-500/30">completed</Badge> : logAnimationStep >= 6 ? <Badge variant="outline" className="text-[10px] bg-cyan-500/10 text-cyan-500 border-cyan-500/30 animate-pulse">in_progress</Badge> : <Badge variant="outline" className="text-[10px] bg-muted/10 text-muted-foreground border-border/30">waiting...</Badge>}
                     </div>
 
                     <div className={`flex items-center justify-between transition-opacity duration-300 ${logAnimationStep >= 6 ? "opacity-100" : "opacity-40"}`}>
-                      <span className="text-foreground flex items-center gap-1.5"><BrainCircuit className="w-3.5 h-3.5 text-purple-500"/> Research Manager</span>
+                      <span className="text-foreground flex items-center gap-1.5"><BrainCircuit className="w-3.5 h-3.5 text-purple-500"/> {t("reports.researchManager").split(" ")[0]}</span>
                       {logAnimationStep >= 8 ? <Badge variant="outline" className="text-[10px] bg-green-500/10 text-green-500 border-green-500/30">completed</Badge> : logAnimationStep >= 7 ? <Badge variant="outline" className="text-[10px] bg-cyan-500/10 text-cyan-500 border-cyan-500/30 animate-pulse">in_progress</Badge> : <Badge variant="outline" className="text-[10px] bg-muted/10 text-muted-foreground border-border/30">waiting...</Badge>}
                     </div>
 
@@ -686,21 +690,21 @@ export default function JobsPage() {
 
                 {/* Team 3: Execution */}
                 <div>
-                  <div className="text-muted-foreground uppercase mb-2 mt-2 flex items-center gap-2"><Scale className="w-3 h-3"/> Team: Risk & Exec</div>
+                  <div className="text-muted-foreground uppercase mb-2 mt-2 flex items-center gap-2"><Scale className="w-3 h-3"/> {t("reports.executionTeam")}</div>
                   <div className="pl-4 border-l border-primary/20 space-y-3">
                     
                     <div className={`flex items-center justify-between transition-opacity duration-300 ${logAnimationStep >= 7 ? "opacity-100" : "opacity-40"}`}>
-                      <span className="text-foreground flex items-center gap-1.5"><ShieldAlert className="w-3.5 h-3.5 text-yellow-500"/> Risk Management</span>
+                      <span className="text-foreground flex items-center gap-1.5"><ShieldAlert className="w-3.5 h-3.5 text-yellow-500"/> {t("reports.riskManagement").split(" ")[0]}</span>
                       {logAnimationStep >= 9 ? <Badge variant="outline" className="text-[10px] bg-green-500/10 text-green-500 border-green-500/30">completed</Badge> : logAnimationStep >= 8 ? <Badge variant="outline" className="text-[10px] bg-cyan-500/10 text-cyan-500 border-cyan-500/30 animate-pulse">in_progress</Badge> : <Badge variant="outline" className="text-[10px] bg-muted/10 text-muted-foreground border-border/30">waiting...</Badge>}
                     </div>
 
                     <div className={`flex items-center justify-between transition-opacity duration-300 ${logAnimationStep >= 8 ? "opacity-100" : "opacity-40"}`}>
-                      <span className="text-foreground flex items-center gap-1.5"><Briefcase className="w-3.5 h-3.5 text-yellow-500"/> Portfolio Manager</span>
+                      <span className="text-foreground flex items-center gap-1.5"><Briefcase className="w-3.5 h-3.5 text-yellow-500"/> {t("reports.portfolioManager").split(" ")[0]}</span>
                       {logAnimationStep >= 10 ? <Badge variant="outline" className="text-[10px] bg-green-500/10 text-green-500 border-green-500/30">completed</Badge> : logAnimationStep >= 9 ? <Badge variant="outline" className="text-[10px] bg-cyan-500/10 text-cyan-500 border-cyan-500/30 animate-pulse">in_progress</Badge> : <Badge variant="outline" className="text-[10px] bg-muted/10 text-muted-foreground border-border/30">waiting...</Badge>}
                     </div>
 
                     <div className={`flex items-center justify-between transition-opacity duration-300 ${logAnimationStep >= 9 ? "opacity-100" : "opacity-40"}`}>
-                      <span className="text-foreground flex items-center gap-1.5"><Scale className="w-3.5 h-3.5 text-green-500"/> Trader</span>
+                      <span className="text-foreground flex items-center gap-1.5"><Scale className="w-3.5 h-3.5 text-green-500"/> {t("reports.trader")}</span>
                       {logAnimationStep >= 11 ? <Badge variant="outline" className="text-[10px] bg-green-500/10 text-green-500 border-green-500/30">completed</Badge> : logAnimationStep >= 10 ? <Badge variant="outline" className="text-[10px] bg-cyan-500/10 text-cyan-500 border-cyan-500/30 animate-pulse">in_progress</Badge> : <Badge variant="outline" className="text-[10px] bg-muted/10 text-muted-foreground border-border/30">waiting...</Badge>}
                     </div>
 
@@ -713,7 +717,7 @@ export default function JobsPage() {
             {/* Right Column: Messages & Tools */}
             <div className="flex-1 flex flex-col">
               <div className="py-2 text-center border-b border-primary/20 text-xs font-bold tracking-widest text-primary bg-primary/5">
-                MESSAGES & TOOLS
+                {t("jobs.create").includes("Tạo") ? "TIN NHẮN & CÔNG CỤ" : "MESSAGES & TOOLS"}
               </div>
               
               {/* Sub-Tabs for Agents */}
@@ -728,7 +732,7 @@ export default function JobsPage() {
                       : "text-muted-foreground hover:bg-primary/10 hover:text-foreground"
                     }`}
                   >
-                    {tab.replace(" Analyst", "").replace(" Researcher", "").replace(" Management", "").replace(" Manager", "")}
+                    {tab === "All" ? (t("jobs.create").includes("Tạo") ? "Tất cả" : "All") : tab.replace(" Analyst", "").replace(" Researcher", "").replace(" Management", "").replace(" Manager", "")}
                   </button>
                 ))}
               </div>
@@ -766,7 +770,9 @@ export default function JobsPage() {
                     {filteredLogs.length === 0 && (
                       <tr>
                         <td colSpan={4} className="py-8 text-center text-muted-foreground">
-                          {logAnimationStep === 0 ? "Initializing pipeline..." : `No logs found for ${activeLogTab}.`}
+                          {logAnimationStep === 0 
+                            ? (t("jobs.create").includes("Tạo") ? "Đang khởi tạo luồng..." : "Initializing pipeline...") 
+                            : `${t("jobs.create").includes("Tạo") ? "Không tìm thấy log cho" : "No logs found for"} ${activeLogTab}.`}
                         </td>
                       </tr>
                     )}
@@ -781,47 +787,62 @@ export default function JobsPage() {
           {/* Bottom Panel: Current Report */}
           <div className="h-[35%] lg:h-[30%] border-t border-primary/30 flex flex-col bg-[#050508] relative">
             <div className="py-2 px-4 border-b border-primary/20 text-xs font-bold tracking-widest text-primary bg-primary/5 flex items-center justify-between">
-              <span>CURRENT REPORT</span>
-              <span className="text-muted-foreground text-[10px] font-normal">Export to PDF / Markdown</span>
+              <span>{t("jobs.create").includes("Tạo") ? "BÁO CÁO HIỆN TẠI" : "CURRENT REPORT"}</span>
+              <span className="text-muted-foreground text-[10px] font-normal">{t("jobs.create").includes("Tạo") ? "Xuất PDF / Markdown" : "Export to PDF / Markdown"}</span>
             </div>
             
             {logAnimationStep < 12 ? (
               <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground space-y-4">
                 <div className="w-8 h-8 rounded-full border-2 border-primary/30 border-t-primary animate-spin"></div>
-                <p className="animate-pulse font-mono text-xs tracking-widest uppercase">Waiting for Pipeline Synthesis...</p>
+                <p className="animate-pulse font-mono text-xs tracking-widest uppercase">
+                  {t("jobs.create").includes("Tạo") ? "Đang tổng hợp báo cáo từ các Agent..." : "Waiting for Pipeline Synthesis..."}
+                </p>
               </div>
             ) : (
               <div className="flex-1 overflow-y-auto p-4 lg:p-6 text-sm leading-relaxed text-muted-foreground custom-scrollbar animate-in fade-in zoom-in-95 duration-700">
-                <h3 className="text-foreground font-bold mb-4 text-lg border-b border-border/40 pb-2">Portfolio Management Decision</h3>
+                <h3 className="text-foreground font-bold mb-4 text-lg border-b border-border/40 pb-2">
+                  {t("jobs.create").includes("Tạo") ? "Quyết Định Quản Trị Danh Mục" : "Portfolio Management Decision"}
+                </h3>
                 
-                <h4 className="text-primary mt-4 mb-2">Neutral Analyst Analysis</h4>
+                <h4 className="text-primary mt-4 mb-2">
+                  {t("jobs.create").includes("Tạo") ? "Phân Tích Của Chuyên Viên Độc Lập" : "Neutral Analyst Analysis"}
+                </h4>
                 <p className="mb-4">
-                  I’ve listened to both sides of this debate, and frankly, both of you are presenting extremes that overlook a more pragmatic, calculated path forward for {selectedLogJob?.ticker}. You’re both trapped in a binary mindset of either reckless abandonment or total paralysis, and neither approach is optimal for the capital we’re managing.
+                  {t("jobs.create").includes("Tạo") 
+                    ? `Tôi đã lắng nghe ý kiến từ cả hai phía, và thực tế, cả hai chuyên viên đang đưa ra các quan điểm thái cực mà bỏ qua lộ trình thực tế, được tính toán kỹ lưỡng hơn cho ${selectedLogJob?.ticker}. Cả hai đều bị mắc kẹt trong tư duy nhị phân giữa việc mạo hiểm không kiểm soát hoặc tê liệt hoàn toàn, và không có cách tiếp cận nào là tối ưu cho nguồn vốn chúng ta đang quản lý.`
+                    : `I’ve listened to both sides of this debate, and frankly, both of you are presenting extremes that overlook a more pragmatic, calculated path forward for ${selectedLogJob?.ticker}. You’re both trapped in a binary mindset of either reckless abandonment or total paralysis, and neither approach is optimal for the capital we’re managing.`}
                 </p>
                 
                 <p className="mb-4">
-                  To the <span className="text-foreground">Aggressive Analyst</span>, you are right to identify the potential for a mean reversion, but you’re blinding yourself to the reality of the volatility. Setting a stop-loss at $69,500 with an ATR of nearly $1,800 is a recipe for disaster. That isn’t risk management; it’s a "stop-out magnet." You’re giving the market barely 1.5 ATRs of room to breathe.
+                  {t("jobs.create").includes("Tạo")
+                    ? `Đối với Chuyên viên Tấn công, bạn đúng khi xác định khả năng đảo chiều trung bình, nhưng bạn đang nhắm mắt trước thực tế biến động. Việc đặt lệnh dừng lỗ ở mức $69,500 với ATR gần $1,800 là một công thức dẫn đến thất bại. Đó không phải là quản lý rủi ro; đó là điểm dừng lỗ quá sát.`
+                    : `To the Aggressive Analyst, you are right to identify the potential for a mean reversion, but you’re blinding yourself to the reality of the volatility. Setting a stop-loss at $69,500 with an ATR of nearly $1,800 is a recipe for disaster. That isn’t risk management; it’s a "stop-out magnet." You’re giving the market barely 1.5 ATRs of room to breathe.`}
                 </p>
 
                 <p className="mb-4">
-                  On the other hand, the <span className="text-foreground">Conservative Analyst</span> is leaning too heavily on structural fear. Yes, the moving averages for {selectedLogJob?.ticker} are bearish, and yes, the trend is currently pointing down. But waiting for a total trend confirmation—like waiting for the price to reclaim the 200-day SMA—effectively means we miss the entire recovery phase of the move.
+                  {t("jobs.create").includes("Tạo")
+                    ? `Mặt khác, Chuyên viên Thận trọng lại đang nghiêng quá nhiều về nỗi sợ hãi cấu trúc. Đúng là các đường trung bình động của ${selectedLogJob?.ticker} đang giảm, và xu hướng hiện tại đang đi xuống. Nhưng việc chờ đợi sự xác nhận xu hướng hoàn toàn—như chờ giá vượt qua đường SMA 200 ngày—có nghĩa là chúng ta sẽ bỏ lỡ toàn bộ giai đoạn phục hồi của thị trường.`
+                    : `On the other hand, the Conservative Analyst is leaning too heavily on structural fear. Yes, the moving averages for ${selectedLogJob?.ticker} are bearish, and yes, the trend is currently pointing down. But waiting for a total trend confirmation—like waiting for the price to reclaim the 200-day SMA—effectively means we miss the entire recovery phase of the move.`}
                 </p>
 
                 <div className="p-4 border-l-2 border-primary bg-primary/5 mt-6 text-foreground shadow-[inset_0_0_20px_rgba(0,240,255,0.05)]">
-                  <strong>Balanced Strategy Proposed:</strong> We take a small starter position—say 1.5%—at the current level to respect the lower Bollinger Band as a potential support. This gets us into the trade and honors the "buy the dip" logic while minimizing exposure. Volatility is within acceptable ATR boundaries.
+                  <strong>{t("jobs.create").includes("Tạo") ? "Đề Xuất Chiến Lược Cân Bằng:" : "Balanced Strategy Proposed:"}</strong>{" "}
+                  {t("jobs.create").includes("Tạo")
+                    ? "Chúng tôi thực hiện vị thế khởi đầu nhỏ—khoảng 1.5%—ở mức hiện tại để tôn trọng dải Bollinger Band dưới dưới dạng hỗ trợ tiềm năng. Điều này giúp chúng ta tham gia giao dịch và tuân theo logic \"mua khi điều chỉnh\" trong khi giảm thiểu rủi ro tối đa."
+                    : "We take a small starter position—say 1.5%—at the current level to respect the lower Bollinger Band as a potential support. This gets us into the trade and honors the \"buy the dip\" logic while minimizing exposure. Volatility is within acceptable ATR boundaries."}
                 </div>
               </div>
             )}
           </div>
 
           {/* Footer Bar: System Stats */}
-          <div className="p-2 border-t border-primary/30 bg-primary/10 flex flex-wrap justify-between items-center text-[11px] text-primary/80">
+          <div className="p-2 border-t border-primary/30 bg-primary/10 flex flex-wrap justify-between items-center text-[11px] text-primary/80 font-mono">
             <div className="flex items-center gap-4 divide-x divide-primary/30">
-              <span className="pl-2">Agents: {Math.min(logAnimationStep, 10)}/10</span>
-              <span className="pl-4">LLM Calls: {logAnimationStep * 2}</span>
-              <span className="pl-4">Tools Used: {Math.floor(logAnimationStep * 1.5)}</span>
+              <span className="pl-2">{t("jobs.create").includes("Tạo") ? "Agents:" : "Agents:"} {Math.min(logAnimationStep, 10)}/10</span>
+              <span className="pl-4">{t("jobs.create").includes("Tạo") ? "Lượt gọi LLM:" : "LLM Calls:"} {logAnimationStep * 2}</span>
+              <span className="pl-4">{t("jobs.create").includes("Tạo") ? "Công cụ:" : "Tools Used:"} {Math.floor(logAnimationStep * 1.5)}</span>
               <span className="pl-4 flex items-center gap-1">Tokens: {(38.0 * (logAnimationStep/12)).toFixed(1)}k<Activity className="w-3 h-3 text-red-400" /> {(15.8 * (logAnimationStep/12)).toFixed(1)}k<Activity className="w-3 h-3 text-green-400" /></span>
-              <span className="pl-4">Reports Generated: {logAnimationStep >= 12 ? "4/4" : `${Math.floor(logAnimationStep/3)}/4`}</span>
+              <span className="pl-4">{t("jobs.create").includes("Tạo") ? "Báo cáo:" : "Reports Generated:"} {logAnimationStep >= 12 ? "4/4" : `${Math.floor(logAnimationStep/3)}/4`}</span>
             </div>
             <div className="flex items-center gap-2 text-foreground font-bold pr-2">
               <Clock className="w-3 h-3 text-primary" />

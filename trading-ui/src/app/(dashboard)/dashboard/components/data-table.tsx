@@ -55,6 +55,7 @@ import { z } from "zod"
 
 import { schema } from "../schemas/task-schema"
 import { useIsMobile } from "@/hooks/use-mobile"
+import { useLanguage } from "@/contexts/language-context"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -127,181 +128,6 @@ function DragHandle({ id }: { id: number }) {
   )
 }
 
-const columns: ColumnDef<z.infer<typeof schema>>[] = [
-  {
-    id: "drag",
-    header: () => null,
-    cell: ({ row }) => <DragHandle id={row.original.id} />,
-  },
-  {
-    id: "select",
-    header: ({ table }) => (
-      <div className="flex items-center justify-center">
-        <Checkbox
-          checked={
-            table.getIsAllPageRowsSelected() ||
-            (table.getIsSomePageRowsSelected() && "indeterminate")
-          }
-          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-          aria-label="Select all"
-        />
-      </div>
-    ),
-    cell: ({ row }) => (
-      <div className="flex items-center justify-center">
-        <Checkbox
-          checked={row.getIsSelected()}
-          onCheckedChange={(value) => row.toggleSelected(!!value)}
-          aria-label="Select row"
-        />
-      </div>
-    ),
-    enableSorting: false,
-    enableHiding: false,
-  },
-  {
-    accessorKey: "header",
-    header: "Header",
-    cell: ({ row }) => {
-      return <TableCellViewer item={row.original} />
-    },
-    enableHiding: false,
-  },
-  {
-    accessorKey: "type",
-    header: "Section Type",
-    cell: ({ row }) => (
-      <div className="w-32">
-        <Badge variant="outline" className="text-muted-foreground px-1.5">
-          {row.original.type}
-        </Badge>
-      </div>
-    ),
-  },
-  {
-    accessorKey: "status",
-    header: "Status",
-    cell: ({ row }) => (
-      <Badge variant="outline" className="text-muted-foreground px-1.5">
-        {row.original.status === "Done" ? (
-          <CircleCheckBig className="text-green-500 dark:text-green-400" />
-        ) : (
-          <Loader />
-        )}
-        {row.original.status}
-      </Badge>
-    ),
-  },
-  {
-    accessorKey: "target",
-    header: () => <div className="w-full">Target</div>,
-    cell: ({ row }) => (
-      <form
-        onSubmit={(e) => {
-          e.preventDefault()
-          toast.promise(new Promise((resolve) => setTimeout(resolve, 1000)), {
-            loading: `Saving ${row.original.header}`,
-            success: "Done",
-            error: "Error",
-          })
-        }}
-      >
-        <Label htmlFor={`${row.original.id}-target`} className="sr-only">
-          Target
-        </Label>
-        <Input
-          className="hover:bg-input/30 focus-visible:bg-background dark:hover:bg-input/30 dark:focus-visible:bg-input/30 h-8 w-16 border-transparent bg-transparent shadow-none focus-visible:border dark:bg-transparent"
-          defaultValue={row.original.target}
-          id={`${row.original.id}-target`}
-        />
-      </form>
-    ),
-  },
-  {
-    accessorKey: "limit",
-    header: () => <div className="w-full">Limit</div>,
-    cell: ({ row }) => (
-      <form
-        onSubmit={(e) => {
-          e.preventDefault()
-          toast.promise(new Promise((resolve) => setTimeout(resolve, 1000)), {
-            loading: `Saving ${row.original.header}`,
-            success: "Done",
-            error: "Error",
-          })
-        }}
-      >
-        <Label htmlFor={`${row.original.id}-limit`} className="sr-only">
-          Limit
-        </Label>
-        <Input
-          className="hover:bg-input/30 focus-visible:bg-background dark:hover:bg-input/30 dark:focus-visible:bg-input/30 h-8 w-16 border-transparent bg-transparent shadow-none focus-visible:border dark:bg-transparent"
-          defaultValue={row.original.limit}
-          id={`${row.original.id}-limit`}
-        />
-      </form>
-    ),
-  },
-  {
-    accessorKey: "reviewer",
-    header: "Reviewer",
-    cell: ({ row }) => {
-      const isAssigned = row.original.reviewer !== "Assign reviewer"
-
-      if (isAssigned) {
-        return row.original.reviewer
-      }
-
-      return (
-        <>
-          <Label htmlFor={`${row.original.id}-reviewer`} className="sr-only">
-            Reviewer
-          </Label>
-          <Select>
-            <SelectTrigger
-              className="w-38 **:data-[slot=select-value]:block **:data-[slot=select-value]:truncate cursor-pointer"
-              size="sm"
-              id={`${row.original.id}-reviewer`}
-            >
-              <SelectValue placeholder="Assign reviewer" />
-            </SelectTrigger>
-            <SelectContent align="end">
-              <SelectItem value="Eddie Lake">Eddie Lake</SelectItem>
-              <SelectItem value="Jamik Tashpulatov">
-                Jamik Tashpulatov
-              </SelectItem>
-            </SelectContent>
-          </Select>
-        </>
-      )
-    },
-  },
-  {
-    id: "actions",
-    cell: () => (
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            className="data-[state=open]:bg-muted text-muted-foreground flex size-8 cursor-pointer"
-            size="icon"
-          >
-            <EllipsisVertical />
-            <span className="sr-only">Open menu</span>
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-32">
-          <DropdownMenuItem>Edit</DropdownMenuItem>
-          <DropdownMenuItem>Make a copy</DropdownMenuItem>
-          <DropdownMenuItem>Favorite</DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem variant="destructive">Delete</DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    ),
-  },
-]
-
 function DraggableRow({ row }: { row: Row<z.infer<typeof schema>> }) {
   const { transform, transition, setNodeRef, isDragging } = useSortable({
     id: row.original.id,
@@ -338,6 +164,183 @@ export function DataTable({
   keyPersonnelData?: z.infer<typeof schema>[]
   focusDocumentsData?: z.infer<typeof schema>[]
 }) {
+  const { t } = useLanguage()
+
+  const columns = React.useMemo<ColumnDef<z.infer<typeof schema>>[]>(() => [
+    {
+      id: "drag",
+      header: () => null,
+      cell: ({ row }) => <DragHandle id={row.original.id} />,
+    },
+    {
+      id: "select",
+      header: ({ table }) => (
+        <div className="flex items-center justify-center">
+          <Checkbox
+            checked={
+              table.getIsAllPageRowsSelected() ||
+              (table.getIsSomePageRowsSelected() && "indeterminate")
+            }
+            onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+            aria-label="Select all"
+          />
+        </div>
+      ),
+      cell: ({ row }) => (
+        <div className="flex items-center justify-center">
+          <Checkbox
+            checked={row.getIsSelected()}
+            onCheckedChange={(value) => row.toggleSelected(!!value)}
+            aria-label="Select row"
+          />
+        </div>
+      ),
+      enableSorting: false,
+      enableHiding: false,
+    },
+    {
+      accessorKey: "header",
+      header: t("dashboard.colHeader"),
+      cell: ({ row }) => {
+        return <TableCellViewer item={row.original} />
+      },
+      enableHiding: false,
+    },
+    {
+      accessorKey: "type",
+      header: t("dashboard.colType"),
+      cell: ({ row }) => (
+        <div className="w-32">
+          <Badge variant="outline" className="text-muted-foreground px-1.5">
+            {row.original.type}
+          </Badge>
+        </div>
+      ),
+    },
+    {
+      accessorKey: "status",
+      header: t("dashboard.colStatus"),
+      cell: ({ row }) => (
+        <Badge variant="outline" className="text-muted-foreground px-1.5">
+          {row.original.status === "Done" ? (
+            <CircleCheckBig className="text-green-500 dark:text-green-400" />
+          ) : (
+            <Loader />
+          )}
+          {row.original.status}
+        </Badge>
+      ),
+    },
+    {
+      accessorKey: "target",
+      header: () => <div className="w-full">{t("dashboard.colTarget")}</div>,
+      cell: ({ row }) => (
+        <form
+          onSubmit={(e) => {
+            e.preventDefault()
+            toast.promise(new Promise((resolve) => setTimeout(resolve, 1000)), {
+              loading: `Saving ${row.original.header}`,
+              success: "Done",
+              error: "Error",
+            })
+          }}
+        >
+          <Label htmlFor={`${row.original.id}-target`} className="sr-only">
+            Target
+          </Label>
+          <Input
+            className="hover:bg-input/30 focus-visible:bg-background dark:hover:bg-input/30 dark:focus-visible:bg-input/30 h-8 w-16 border-transparent bg-transparent shadow-none focus-visible:border dark:bg-transparent"
+            defaultValue={row.original.target}
+            id={`${row.original.id}-target`}
+          />
+        </form>
+      ),
+    },
+    {
+      accessorKey: "limit",
+      header: () => <div className="w-full">{t("dashboard.colLimit")}</div>,
+      cell: ({ row }) => (
+        <form
+          onSubmit={(e) => {
+            e.preventDefault()
+            toast.promise(new Promise((resolve) => setTimeout(resolve, 1000)), {
+              loading: `Saving ${row.original.header}`,
+              success: "Done",
+              error: "Error",
+            })
+          }}
+        >
+          <Label htmlFor={`${row.original.id}-limit`} className="sr-only">
+            Limit
+          </Label>
+          <Input
+            className="hover:bg-input/30 focus-visible:bg-background dark:hover:bg-input/30 dark:focus-visible:bg-input/30 h-8 w-16 border-transparent bg-transparent shadow-none focus-visible:border dark:bg-transparent"
+            defaultValue={row.original.limit}
+            id={`${row.original.id}-limit`}
+          />
+        </form>
+      ),
+    },
+    {
+      accessorKey: "reviewer",
+      header: t("dashboard.colReviewer"),
+      cell: ({ row }) => {
+        const isAssigned = row.original.reviewer !== "Assign reviewer"
+
+        if (isAssigned) {
+          return row.original.reviewer
+        }
+
+        return (
+          <>
+            <Label htmlFor={`${row.original.id}-reviewer`} className="sr-only">
+              Reviewer
+            </Label>
+            <Select>
+              <SelectTrigger
+                className="w-38 **:data-[slot=select-value]:block **:data-[slot=select-value]:truncate cursor-pointer"
+                size="sm"
+                id={`${row.original.id}-reviewer`}
+              >
+                <SelectValue placeholder="Assign reviewer" />
+              </SelectTrigger>
+              <SelectContent align="end">
+                <SelectItem value="Eddie Lake">Eddie Lake</SelectItem>
+                <SelectItem value="Jamik Tashpulatov">
+                  Jamik Tashpulatov
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </>
+        )
+      },
+    },
+    {
+      id: "actions",
+      cell: () => (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              className="data-[state=open]:bg-muted text-muted-foreground flex size-8 cursor-pointer"
+              size="icon"
+            >
+              <EllipsisVertical />
+              <span className="sr-only">Open menu</span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-32">
+            <DropdownMenuItem>Edit</DropdownMenuItem>
+            <DropdownMenuItem>Make a copy</DropdownMenuItem>
+            <DropdownMenuItem>Favorite</DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem variant="destructive">Delete</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      ),
+    },
+  ], [t])
+
   const [data, setData] = React.useState(() => initialData)
   const [pastPerformance, setPastPerformance] = React.useState(() => pastPerformanceData)
   const [keyPersonnel, setKeyPersonnel] = React.useState(() => keyPersonnelData)
@@ -579,7 +582,7 @@ export function DataTable({
                     colSpan={columns.length}
                     className="h-24 text-center"
                   >
-                    No results.
+                    {t("dashboard.noResults")}
                   </TableCell>
                 </TableRow>
               )}
@@ -589,13 +592,14 @@ export function DataTable({
       </div>
       <div className="flex items-center justify-between px-4">
         <div className="text-muted-foreground hidden flex-1 text-sm lg:flex">
-          {currentTable.getFilteredSelectedRowModel().rows.length} of{" "}
-          {currentTable.getFilteredRowModel().rows.length} row(s) selected.
+          {t("dashboard.rowsSelected")
+            .replace("{selected}", String(currentTable.getFilteredSelectedRowModel().rows.length))
+            .replace("{total}", String(currentTable.getFilteredRowModel().rows.length))}
         </div>
         <div className="flex w-full items-center gap-8 lg:w-fit">
           <div className="hidden items-center gap-2 lg:flex">
             <Label htmlFor="rows-per-page" className="text-sm font-medium">
-              Rows per page
+              {t("dashboard.rowsPerPage")}
             </Label>
             <Select
               value={`${currentTable.getState().pagination.pageSize}`}
@@ -618,8 +622,9 @@ export function DataTable({
             </Select>
           </div>
           <div className="flex w-fit items-center justify-center text-sm font-medium">
-            Page {currentTable.getState().pagination.pageIndex + 1} of{" "}
-            {currentTable.getPageCount()}
+            {t("dashboard.pageOf")
+              .replace("{page}", String(currentTable.getState().pagination.pageIndex + 1))
+              .replace("{total}", String(currentTable.getPageCount()))}
           </div>
           <div className="ml-auto flex items-center gap-2 lg:ml-0">
             <Button
@@ -628,7 +633,7 @@ export function DataTable({
               onClick={() => currentTable.setPageIndex(0)}
               disabled={!currentTable.getCanPreviousPage()}
             >
-              <span className="sr-only">Go to first page</span>
+              <span className="sr-only">{t("dashboard.firstPage")}</span>
               <ChevronsLeft />
             </Button>
             <Button
@@ -638,7 +643,7 @@ export function DataTable({
               onClick={() => currentTable.previousPage()}
               disabled={!currentTable.getCanPreviousPage()}
             >
-              <span className="sr-only">Go to previous page</span>
+              <span className="sr-only">{t("dashboard.prevPage")}</span>
               <ChevronLeft />
             </Button>
             <Button
@@ -648,7 +653,7 @@ export function DataTable({
               onClick={() => currentTable.nextPage()}
               disabled={!currentTable.getCanNextPage()}
             >
-              <span className="sr-only">Go to next page</span>
+              <span className="sr-only">{t("dashboard.nextPage")}</span>
               <ChevronRight />
             </Button>
             <Button
@@ -658,7 +663,7 @@ export function DataTable({
               onClick={() => currentTable.setPageIndex(currentTable.getPageCount() - 1)}
               disabled={!currentTable.getCanNextPage()}
             >
-              <span className="sr-only">Go to last page</span>
+              <span className="sr-only">{t("dashboard.lastPage")}</span>
               <ChevronsRight />
             </Button>
           </div>
@@ -683,32 +688,32 @@ export function DataTable({
             size="sm"
             id="view-selector"
           >
-            <SelectValue placeholder="Select a view" />
+            <SelectValue placeholder={t("dashboard.selectView")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="outline">Active Protocols</SelectItem>
-            <SelectItem value="past-performance">Agent Logs</SelectItem>
-            <SelectItem value="key-personnel">Review Queue</SelectItem>
-            <SelectItem value="focus-documents">Completed Tasks</SelectItem>
+            <SelectItem value="outline">{t("dashboard.activeProtocols")}</SelectItem>
+            <SelectItem value="past-performance">{t("dashboard.agentLogs")}</SelectItem>
+            <SelectItem value="key-personnel">{t("dashboard.reviewQueue")}</SelectItem>
+            <SelectItem value="focus-documents">{t("dashboard.completedTasks")}</SelectItem>
           </SelectContent>
         </Select>
         <TabsList className="**:data-[slot=badge]:bg-muted-foreground/30 hidden **:data-[slot=badge]:size-5 **:data-[slot=badge]:rounded-full **:data-[slot=badge]:px-1 sm:flex">
-          <TabsTrigger value="outline" className="cursor-pointer">Active Protocols</TabsTrigger>
+          <TabsTrigger value="outline" className="cursor-pointer">{t("dashboard.activeProtocols")}</TabsTrigger>
           <TabsTrigger value="past-performance" className="cursor-pointer">
-            Agent Logs <Badge variant="secondary">3</Badge>
+            {t("dashboard.agentLogs")} <Badge variant="secondary">3</Badge>
           </TabsTrigger>
           <TabsTrigger value="key-personnel" className="cursor-pointer">
-            Review Queue <Badge variant="secondary">2</Badge>
+            {t("dashboard.reviewQueue")} <Badge variant="secondary">2</Badge>
           </TabsTrigger>
-          <TabsTrigger value="focus-documents" className="cursor-pointer">Completed Tasks</TabsTrigger>
+          <TabsTrigger value="focus-documents" className="cursor-pointer">{t("dashboard.completedTasks")}</TabsTrigger>
         </TabsList>
         <div className="flex items-center gap-2">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm" className="cursor-pointer">
                 <Columns2 />
-                <span className="hidden lg:inline">Customize Columns</span>
-                <span className="lg:hidden">Columns</span>
+                <span className="hidden lg:inline">{t("dashboard.customizeColumns")}</span>
+                <span className="lg:hidden">{t("dashboard.columns")}</span>
                 <ChevronDown />
               </Button>
             </DropdownMenuTrigger>
@@ -738,7 +743,7 @@ export function DataTable({
           </DropdownMenu>
           <Button variant="outline" size="sm" className="cursor-pointer">
             <Plus />
-            <span className="hidden lg:inline">Add Section</span>
+            <span className="hidden lg:inline">{t("dashboard.addSection")}</span>
           </Button>
         </div>
       </div>

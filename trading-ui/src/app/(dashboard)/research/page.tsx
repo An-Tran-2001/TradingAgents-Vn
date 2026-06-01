@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState, useEffect, useRef } from "react"
+import { useLanguage } from "@/contexts/language-context"
 import {
   Send,
   Bot,
@@ -73,6 +74,7 @@ const cliLogsData = [
 ]
 
 export default function AgentsResearchPage() {
+  const { t } = useLanguage()
   const [messages, setMessages] = useState<Message[]>([])
   const [inputValue, setInputValue] = useState("")
   const [ticker, setTicker] = useState("")
@@ -231,7 +233,7 @@ export default function AgentsResearchPage() {
               
               <div className="absolute top-4 left-6 text-[10px] font-mono text-muted-foreground uppercase tracking-[0.2em] flex items-center gap-2">
                 <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse"></span>
-                Neural Pipeline Active
+                {t("research.pipeline")}
               </div>
 
               {/* Pipeline Track */}
@@ -245,8 +247,8 @@ export default function AgentsResearchPage() {
                     </div>
                   </div>
                   <div className="absolute -bottom-10 text-center w-32">
-                    <span className={`block text-xs font-bold font-mono tracking-widest ${isAnalystActive ? 'text-cyan-400' : isAnalystComplete ? 'text-cyan-700' : 'text-muted-foreground'}`}>ANALYST</span>
-                    <span className="block text-[9px] font-mono text-muted-foreground/70 uppercase">{isAnalystActive ? 'Processing...' : isAnalystComplete ? 'Data Streamed' : 'Standby'}</span>
+                    <span className={`block text-xs font-bold font-mono tracking-widest ${isAnalystActive ? 'text-cyan-400' : isAnalystComplete ? 'text-cyan-700' : 'text-muted-foreground'}`}>{t("research.analysts").toUpperCase()}</span>
+                    <span className="block text-[9px] font-mono text-muted-foreground/70 uppercase">{isAnalystActive ? (t("research.running").includes("...") ? t("research.running") : t("research.running") + "...") : isAnalystComplete ? 'Done' : 'Standby'}</span>
                   </div>
                 </div>
 
@@ -264,8 +266,8 @@ export default function AgentsResearchPage() {
                     )}
                   </div>
                   <div className="absolute -bottom-10 text-center w-32">
-                    <span className={`block text-xs font-bold font-mono tracking-widest ${isResearchActive ? 'text-pink-400' : isResearchComplete ? 'text-pink-700' : 'text-muted-foreground'}`}>RESEARCH</span>
-                    <span className="block text-[9px] font-mono text-muted-foreground/70 uppercase">{isResearchActive ? 'Debating...' : isResearchComplete ? 'Consensus Reached' : 'Standby'}</span>
+                    <span className={`block text-xs font-bold font-mono tracking-widest ${isResearchActive ? 'text-pink-400' : isResearchComplete ? 'text-pink-700' : 'text-muted-foreground'}`}>{t("research.researchers").toUpperCase()}</span>
+                    <span className="block text-[9px] font-mono text-muted-foreground/70 uppercase">{isResearchActive ? 'Debating...' : isResearchComplete ? 'Done' : 'Standby'}</span>
                   </div>
                 </div>
 
@@ -280,8 +282,8 @@ export default function AgentsResearchPage() {
                     {isTradingComplete ? <CheckCircle2 className="h-5 w-5 text-green-600/70" /> : <ShieldCheck className={`h-5 w-5 ${isTradingActive ? 'text-green-400 animate-pulse' : 'text-muted-foreground/50'}`} />}
                   </div>
                   <div className="absolute -bottom-10 text-center w-32">
-                    <span className={`block text-xs font-bold font-mono tracking-widest ${isTradingActive ? 'text-green-400' : isTradingComplete ? 'text-green-600' : 'text-muted-foreground'}`}>EXECUTION</span>
-                    <span className="block text-[9px] font-mono text-muted-foreground/70 uppercase">{isTradingActive ? 'Executing...' : isTradingComplete ? 'Order Filled' : 'Standby'}</span>
+                    <span className={`block text-xs font-bold font-mono tracking-widest ${isTradingActive ? 'text-green-400' : isTradingComplete ? 'text-green-650' : 'text-muted-foreground'}`}>{t("research.trader").toUpperCase()}</span>
+                    <span className="block text-[9px] font-mono text-muted-foreground/70 uppercase">{isTradingActive ? 'Executing...' : isTradingComplete ? 'Done' : 'Standby'}</span>
                   </div>
                 </div>
 
@@ -297,13 +299,13 @@ export default function AgentsResearchPage() {
                 {/* Left Column: Progress Tree */}
                 <div className="hidden sm:flex w-[200px] lg:w-[250px] border-r border-primary/20 flex-col bg-background/50">
                   <div className="py-2 text-center border-b border-primary/20 text-xs font-bold tracking-widest text-primary bg-primary/5">
-                    PROGRESS
+                    {t("research.pipeline").toUpperCase()}
                   </div>
                   <div className="flex-1 overflow-y-auto p-4 space-y-6 text-xs custom-scrollbar">
                     
                     {/* Team 1: Analyst */}
                     <div>
-                      <div className="text-muted-foreground uppercase mb-2 flex items-center gap-2"><Activity className="w-3 h-3"/> Team: Analyst</div>
+                      <div className="text-muted-foreground uppercase mb-2 flex items-center gap-2"><Activity className="w-3 h-3"/> {t("reports.analystTeam")}</div>
                       <div className="pl-4 border-l border-primary/20 space-y-3">
                         <div className={`flex items-center justify-between transition-opacity duration-300 ${logAnimationStep >= 0 ? "opacity-100" : "opacity-40"}`}>
                           <span className="text-foreground flex items-center gap-1.5"><FileText className="w-3.5 h-3.5 text-cyan-500"/> Fundamentals</span>
@@ -326,7 +328,7 @@ export default function AgentsResearchPage() {
 
                     {/* Team 2: Research */}
                     <div>
-                      <div className="text-muted-foreground uppercase mb-2 mt-2 flex items-center gap-2"><Network className="w-3 h-3"/> Team: Research</div>
+                      <div className="text-muted-foreground uppercase mb-2 mt-2 flex items-center gap-2"><Network className="w-3 h-3"/> {t("reports.researchTeam")}</div>
                       <div className="pl-4 border-l border-primary/20 space-y-3">
                         <div className={`flex items-center justify-between transition-opacity duration-300 ${logAnimationStep >= 4 ? "opacity-100" : "opacity-40"}`}>
                           <span className="text-foreground flex items-center gap-1.5"><TrendingUp className="w-3.5 h-3.5 text-pink-500"/> Bull</span>
@@ -345,7 +347,7 @@ export default function AgentsResearchPage() {
 
                     {/* Team 3: Execution */}
                     <div>
-                      <div className="text-muted-foreground uppercase mb-2 mt-2 flex items-center gap-2"><Scale className="w-3 h-3"/> Team: Exec</div>
+                      <div className="text-muted-foreground uppercase mb-2 mt-2 flex items-center gap-2"><Scale className="w-3 h-3"/> {t("reports.executionTeam")}</div>
                       <div className="pl-4 border-l border-primary/20 space-y-3">
                         <div className={`flex items-center justify-between transition-opacity duration-300 ${logAnimationStep >= 7 ? "opacity-100" : "opacity-40"}`}>
                           <span className="text-foreground flex items-center gap-1.5"><ShieldAlert className="w-3.5 h-3.5 text-yellow-500"/> Risk Mgmt</span>
@@ -367,7 +369,7 @@ export default function AgentsResearchPage() {
                 {/* Right Column: Messages & Tools */}
                 <div className="flex-1 flex flex-col min-w-0">
                   <div className="py-2 text-center border-b border-primary/20 text-xs font-bold tracking-widest text-primary bg-primary/5">
-                    MESSAGES & TOOLS
+                    {t("research.cli").toUpperCase()}
                   </div>
                   
                   {/* Sub-Tabs for Agents */}
@@ -382,7 +384,7 @@ export default function AgentsResearchPage() {
                           : "text-muted-foreground hover:bg-primary/10 hover:text-foreground"
                         }`}
                       >
-                        {tab.replace(" Analyst", "").replace(" Researcher", "").replace(" Management", "").replace(" Manager", "")}
+                        {tab === "All" ? t("research.allLogs") : tab.replace(" Analyst", "").replace(" Researcher", "").replace(" Management", "").replace(" Manager", "")}
                       </button>
                     ))}
                   </div>
@@ -464,10 +466,10 @@ export default function AgentsResearchPage() {
                       <BrainCircuit className="h-10 w-10 relative z-10 group-hover:scale-110 transition-transform" />
                     </div>
                     <h1 className="mb-2 text-4xl font-semibold tracking-tight bg-clip-text text-transparent bg-gradient-to-b from-foreground to-foreground/70">
-                      Tauric Nexus Ready
+                      {t("research.welcomeTitle")}
                     </h1>
                     <p className="mb-8 text-muted-foreground max-w-md text-[15px]">
-                      Agent Pipeline is standing by. Select a quick action or input your custom trading request below.
+                      {t("research.welcomeDesc")}
                     </p>
                     
                     <div className="grid w-full grid-cols-1 gap-3 sm:grid-cols-2">
@@ -544,7 +546,7 @@ export default function AgentsResearchPage() {
                 </Button>
                 <input
                   type="text"
-                  placeholder="Tell Tauric Nexus what you want to research or trade..."
+                  placeholder={t("research.welcomePromptPlaceholder")}
                   className="flex h-14 w-full bg-transparent px-3 py-2 text-base outline-none placeholder:text-muted-foreground focus-visible:outline-none"
                   value={inputValue}
                   onChange={(e) => setInputValue(e.target.value)}
@@ -561,7 +563,7 @@ export default function AgentsResearchPage() {
               </div>
               <div className="mt-2 text-center">
                 <span className="text-xs text-muted-foreground">
-                  Tauric Nexus may produce inaccurate information about people, places, or facts.
+                  {t("research.disclaimer")}
                 </span>
               </div>
             </div>
@@ -573,7 +575,7 @@ export default function AgentsResearchPage() {
       <div className="w-full lg:w-80 border-l border-border/50 bg-background/60 backdrop-blur-md flex flex-col h-[40vh] lg:h-full shrink-0 z-20">
         <div className="p-4 border-b border-border/50 flex items-center gap-2 sticky top-0 bg-background/95 backdrop-blur z-10">
           <Settings2 className="h-5 w-5 text-primary" />
-          <h2 className="font-semibold text-sm">Nexus Configuration</h2>
+          <h2 className="font-semibold text-sm">{t("research.settings")}</h2>
         </div>
         
         <ScrollArea className="flex-1">
@@ -583,7 +585,7 @@ export default function AgentsResearchPage() {
             <div className="space-y-5">
               <div className="space-y-3">
                 <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-                  <Cloud className="h-3 w-3" /> Provider
+                  <Cloud className="h-3 w-3" /> {t("research.provider")}
                 </Label>
                 <Select defaultValue="openai">
                   <SelectTrigger className="bg-background/60 h-10 border-primary/20 hover:border-primary/40 focus:ring-primary/30 transition-all rounded-xl shadow-sm">
@@ -600,7 +602,7 @@ export default function AgentsResearchPage() {
 
               <div className="space-y-3">
                 <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-                  <Cpu className="h-3 w-3" /> AI Model
+                  <Cpu className="h-3 w-3" /> {t("research.model")}
                 </Label>
                 <Select defaultValue="gpt-4o">
                   <SelectTrigger className="bg-background/60 h-10 border-primary/20 hover:border-primary/40 focus:ring-primary/30 transition-all rounded-xl shadow-sm">
@@ -619,7 +621,7 @@ export default function AgentsResearchPage() {
             {/* Analyst Teams Multi-select */}
             <div className="space-y-3">
               <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-                <BrainCircuit className="h-3 w-3" /> Active Analyst Teams
+                <BrainCircuit className="h-3 w-3" /> {t("research.activeTeams")}
               </Label>
               <div className="flex flex-col gap-2">
                 <label className="flex items-center justify-between rounded-xl border border-primary/10 bg-background/40 px-3 py-2.5 cursor-pointer hover:border-primary/40 hover:bg-primary/5 hover:shadow-[0_0_15px_rgba(var(--primary),0.1)] transition-all group">
@@ -672,32 +674,32 @@ export default function AgentsResearchPage() {
               
               <div className="space-y-3 relative z-10">
                 <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-                  <Layers className="h-3 w-3" /> Research Depth
+                  <Layers className="h-3 w-3" /> {t("research.depth")}
                 </Label>
                 <Select defaultValue="medium">
                   <SelectTrigger className="bg-background/80 h-9 border-primary/30 hover:border-primary/50 focus:ring-primary/40 transition-all rounded-lg shadow-sm">
                     <SelectValue placeholder="Select Depth" />
                   </SelectTrigger>
                   <SelectContent className="rounded-lg border-primary/30">
-                    <SelectItem value="shallow">Shallow (Fast)</SelectItem>
-                    <SelectItem value="medium">Medium (Standard)</SelectItem>
-                    <SelectItem value="deep">Deep (Comprehensive)</SelectItem>
+                    <SelectItem value="shallow">{t("research.depthShallow")}</SelectItem>
+                    <SelectItem value="medium">{t("research.depthMedium")}</SelectItem>
+                    <SelectItem value="deep">{t("research.depthDeepOption")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-3 relative z-10">
                 <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-                  <Gauge className="h-3 w-3" /> Reasoning Effort
+                  <Gauge className="h-3 w-3" /> {t("research.reasoningEffort")}
                 </Label>
                 <Select defaultValue="high">
                   <SelectTrigger className="bg-background/80 h-9 border-primary/30 hover:border-primary/50 focus:ring-primary/40 transition-all rounded-lg shadow-sm">
                     <SelectValue placeholder="Select Effort" />
                   </SelectTrigger>
                   <SelectContent className="rounded-lg border-primary/30">
-                    <SelectItem value="low">Low (Heuristic)</SelectItem>
-                    <SelectItem value="medium">Medium (Balanced)</SelectItem>
-                    <SelectItem value="high">High (Deep Debate)</SelectItem>
+                    <SelectItem value="low">{t("research.effortLow")}</SelectItem>
+                    <SelectItem value="medium">{t("research.effortMedium")}</SelectItem>
+                    <SelectItem value="high">{t("research.effortHigh")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
