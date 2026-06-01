@@ -668,10 +668,11 @@ export function DataTable({
   )
 
   return (
-    <Tabs
-      defaultValue="outline"
-      className="w-full flex-col justify-start gap-6"
-    >
+    <div className="bg-card/60 backdrop-blur-xl border border-primary/20 rounded-xl p-4 sm:p-6 hover:shadow-[0_0_20px_rgba(var(--primary),0.05)] transition-all duration-300">
+      <Tabs
+        defaultValue="outline"
+        className="w-full flex-col justify-start gap-6"
+      >
       <div className="flex items-center justify-between px-4 lg:px-6 flex-wrap gap-3">
         <Label htmlFor="view-selector" className="sr-only">
           View
@@ -685,21 +686,21 @@ export function DataTable({
             <SelectValue placeholder="Select a view" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="outline">Outline</SelectItem>
-            <SelectItem value="past-performance">Past Performance</SelectItem>
-            <SelectItem value="key-personnel">Key Personnel</SelectItem>
-            <SelectItem value="focus-documents">Focus Documents</SelectItem>
+            <SelectItem value="outline">Active Protocols</SelectItem>
+            <SelectItem value="past-performance">Agent Logs</SelectItem>
+            <SelectItem value="key-personnel">Review Queue</SelectItem>
+            <SelectItem value="focus-documents">Completed Tasks</SelectItem>
           </SelectContent>
         </Select>
         <TabsList className="**:data-[slot=badge]:bg-muted-foreground/30 hidden **:data-[slot=badge]:size-5 **:data-[slot=badge]:rounded-full **:data-[slot=badge]:px-1 sm:flex">
-          <TabsTrigger value="outline" className="cursor-pointer">Outline</TabsTrigger>
+          <TabsTrigger value="outline" className="cursor-pointer">Active Protocols</TabsTrigger>
           <TabsTrigger value="past-performance" className="cursor-pointer">
-            Past Performance <Badge variant="secondary">3</Badge>
+            Agent Logs <Badge variant="secondary">3</Badge>
           </TabsTrigger>
           <TabsTrigger value="key-personnel" className="cursor-pointer">
-            Key Personnel <Badge variant="secondary">2</Badge>
+            Review Queue <Badge variant="secondary">2</Badge>
           </TabsTrigger>
-          <TabsTrigger value="focus-documents" className="cursor-pointer">Focus Documents</TabsTrigger>
+          <TabsTrigger value="focus-documents" className="cursor-pointer">Completed Tasks</TabsTrigger>
         </TabsList>
         <div className="flex items-center gap-2">
           <DropdownMenu>
@@ -904,7 +905,8 @@ export function DataTable({
           handleCurrentDragEnd={handleFocusDocumentsDragEnd}
         />
       </TabsContent>
-    </Tabs>
+      </Tabs>
+    </div>
   )
 }
 

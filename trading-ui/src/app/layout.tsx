@@ -6,8 +6,8 @@ import { SidebarConfigProvider } from "@/contexts/sidebar-context";
 import { inter } from "@/lib/fonts";
 
 export const metadata: Metadata = {
-  title: "Shadcn Dashboard",
-  description: "A dashboard built with Next.js and shadcn/ui",
+  title: "Trading Agents VN",
+  description: "AI Financial Command Center",
 };
 
 export default function RootLayout({
@@ -18,7 +18,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${inter.variable} antialiased`}>
       <body className={inter.className}>
-        <ThemeProvider defaultTheme="system" storageKey="nextjs-ui-theme">
+        <ThemeProvider defaultTheme="dark" storageKey="nextjs-ui-theme">
           <SidebarConfigProvider>
             {children}
           </SidebarConfigProvider>

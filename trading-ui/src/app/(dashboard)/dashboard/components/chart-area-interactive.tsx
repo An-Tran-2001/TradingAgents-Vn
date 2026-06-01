@@ -131,12 +131,12 @@ const chartConfig = {
     label: "Visitors",
   },
   desktop: {
-    label: "Desktop",
+    label: "Deep Think",
     color: "var(--primary)",
   },
   mobile: {
-    label: "Mobile",
-    color: "var(--primary)",
+    label: "Quick Think",
+    color: "var(--chart-3)",
   },
 } satisfies ChartConfig
 
@@ -165,12 +165,12 @@ export function ChartAreaInteractive() {
   })
 
   return (
-    <Card className="@container/card">
+    <Card className="@container/card bg-card/60 backdrop-blur-xl border-primary/20 hover:shadow-[0_0_20px_rgba(var(--primary),0.05)] transition-all duration-300">
       <CardHeader>
-        <CardTitle>Total Visitors</CardTitle>
+        <CardTitle>Agent Processing Volume</CardTitle>
         <CardDescription>
           <span className="hidden @[540px]/card:block">
-            Total for the last 3 months
+            Inference volume over time
           </span>
           <span className="@[540px]/card:hidden">Last 3 months</span>
         </CardDescription>

@@ -24,8 +24,8 @@ export function ThemeCustomizer({ open, onOpenChange }: ThemeCustomizerProps) {
   const { config: sidebarConfig, updateConfig: updateSidebarConfig } = useSidebarConfig()
 
   const [activeTab, setActiveTab] = React.useState("theme")
-  const [selectedTheme, setSelectedTheme] = React.useState("default")
-  const [selectedTweakcnTheme, setSelectedTweakcnTheme] = React.useState("")
+  const [selectedTheme, setSelectedTheme] = React.useState("")
+  const [selectedTweakcnTheme, setSelectedTweakcnTheme] = React.useState("cyber-ai")
   const [selectedRadius, setSelectedRadius] = React.useState("0.5rem")
   const [importModalOpen, setImportModalOpen] = React.useState(false)
   const [importedTheme, setImportedTheme] = React.useState<ImportedTheme | null>(null)
@@ -34,8 +34,8 @@ export function ThemeCustomizer({ open, onOpenChange }: ThemeCustomizerProps) {
     // Complete reset to application defaults
 
     // 1. Reset all state variables to initial values
-    setSelectedTheme("default")
-    setSelectedTweakcnTheme("")
+    setSelectedTheme("")
+    setSelectedTweakcnTheme("cyber-ai")
     setSelectedRadius("0.5rem")
     setImportedTheme(null) // Clear imported theme
     setBrandColorsValues({}) // Clear brand colors state

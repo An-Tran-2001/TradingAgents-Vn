@@ -6,8 +6,17 @@ import { Separator } from "@/components/ui/separator"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import { CommandSearch, SearchTrigger } from "@/components/command-search"
 import { ModeToggle } from "@/components/mode-toggle"
+import { Settings } from "lucide-react"
+import Link from "next/link"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
-export function SiteHeader() {
+export function SiteHeader({ onSettingsClick }: { onSettingsClick?: () => void }) {
   const [searchOpen, setSearchOpen] = React.useState(false)
 
   React.useEffect(() => {
@@ -35,35 +44,21 @@ export function SiteHeader() {
             <SearchTrigger onClick={() => setSearchOpen(true)} />
           </div>
           <div className="ml-auto flex items-center gap-2">
-            <Button variant="ghost" asChild size="sm" className="hidden sm:flex">
-              <a
-                href="https://shadcnstore.com/blocks"
-                rel="noopener noreferrer"
-                target="_blank"
-                className="dark:text-foreground"
-              >
-                Blocks
-              </a>
-            </Button>
-            <Button variant="ghost" asChild size="sm" className="hidden sm:flex">
-              <a
-                href="/landing"
-                rel="noopener noreferrer"
-                target="_blank"
-                className="dark:text-foreground"
-              >
-                Landing Page
-              </a>
-            </Button>
-            <Button variant="ghost" asChild size="sm" className="hidden sm:flex">
-              <a
-                href="https://github.com/silicondeck/shadcn-dashboard-landing-template"
-                rel="noopener noreferrer"
-                target="_blank"
-                className="dark:text-foreground"
-              >
-                GitHub
-              </a>
+            <Select defaultValue="vi">
+              <SelectTrigger className="w-[120px] h-8 text-xs hidden sm:flex">
+                <SelectValue placeholder="Language" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="vi">Tiếng Việt</SelectItem>
+                <SelectItem value="en">English</SelectItem>
+              </SelectContent>
+            </Select>
+
+
+
+            <Button variant="ghost" size="icon" onClick={onSettingsClick} className="h-8 w-8 hidden sm:flex">
+              <Settings className="h-4 w-4" />
+              <span className="sr-only">Settings</span>
             </Button>
             <ModeToggle />
           </div>
