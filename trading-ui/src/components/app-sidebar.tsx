@@ -7,6 +7,7 @@ import {
   Bot,
   History,
   CalendarClock,
+  Home,
 } from "lucide-react"
 import Link from "next/link"
 import { Logo } from "@/components/logo"
@@ -32,6 +33,11 @@ const data = {
     {
       label: "Features",
       items: [
+        {
+          title: "Home",
+          url: "/home",
+          icon: Home,
+        },
         {
           title: "Agents",
           url: "/research",
@@ -74,7 +80,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
-              <Link href="/dashboard">
+              <Link href="/home">
                 <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
                   <Logo size={24} className="text-current" />
                 </div>
