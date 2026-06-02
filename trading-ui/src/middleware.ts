@@ -3,17 +3,31 @@ import type { NextRequest } from 'next/server'
 
 // This function can be marked `async` if using `await` inside
 export function middleware(request: NextRequest) {
-  // Add custom middleware logic here
-  // For example: authentication, redirects, etc.
+  const token = request.cookies.get('access_token')?.value
+  const { pathname } = request.nextUrl
   
-  // Example: Redirect /login to /auth/sign-in
-  if (request.nextUrl.pathname === '/login') {
-    return NextResponse.redirect(new URL('/auth/sign-in', request.url))
+  // Public paths that do not require authentication
+  const isAuthPath = pathname.startsWith('/sign-in') || pathname.startsWith('/sign-up') || pathname.startsWith('/login') || pathname.startsWith('/register')
+  const isPublicPath = isAuthPath || pathname === '/landing'
+
+  if (isAuthPath && token) {
+    // If user is already logged in, don't let them access login/register pages
+    return NextResponse.redirect(new URL('/', request.url))
+  }
+
+  if (!isPublicPath && !token) {
+    // If not logged in and trying to access a protected route, redirect to login
+    return NextResponse.redirect(new URL('/sign-in', request.url))
+  }
+
+  // Example: Redirect /login to /sign-in
+  if (pathname === '/login') {
+    return NextResponse.redirect(new URL('/sign-in', request.url))
   }
   
-  // Example: Redirect /register to /auth/sign-up
-  if (request.nextUrl.pathname === '/register') {
-    return NextResponse.redirect(new URL('/auth/sign-up', request.url))
+  // Example: Redirect /register to /sign-up
+  if (pathname === '/register') {
+    return NextResponse.redirect(new URL('/sign-up', request.url))
   }
   
   return NextResponse.next()

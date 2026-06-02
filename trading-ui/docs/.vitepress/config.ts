@@ -2,7 +2,7 @@ import { defineConfig } from 'vitepress'
 
 export default defineConfig({
   title: 'Shadcn Dashboard & Landing',
-  description: 'Open-source admin dashboard & landing page template built with React, TypeScript, shadcn/ui v3, and Tailwind CSS v4. Developed by ShadcnStore.',
+  description: 'Open-source admin dashboard & landing page template built with React, TypeScript, shadcn/ui v3, and Tailwind CSS v4. Developed by Trading Agents.',
 
   // Theme configuration
   themeConfig: {
@@ -111,8 +111,8 @@ export default defineConfig({
 
     // Footer
     footer: {
-      message: 'Released under the MIT License. Developed by ShadcnStore.',
-      copyright: 'Copyright © 2024-present ShadcnStore'
+      message: 'Released under the MIT License. Developed by Trading Agents.',
+      copyright: 'Copyright © 2024-present Trading Agents'
     },
 
     // Search
@@ -145,7 +145,7 @@ export default defineConfig({
     ['meta', { property: 'og:type', content: 'website' }],
     ['meta', { property: 'og:locale', content: 'en' }],
     ['meta', { property: 'og:title', content: 'Shadcn Dashboard + Landing Page Template | React & Next.js Starter Template' }],
-    ['meta', { property: 'og:site_name', content: 'ShadcnStore' }],
+    ['meta', { property: 'og:site_name', content: 'Trading Agents' }],
     ['meta', { property: 'og:image', content: '/og-image.png' }],
     ['meta', { property: 'og:url', content: 'https://shadcnstore.com/templates/dashboard/shadcn-dashboard-landing-template' }]
   ]

@@ -1,6 +1,6 @@
 # Next.js Version Guide
 
-The Next.js version of ShadcnStore provides a full-stack React framework with server-side rendering, static generation, and advanced optimization features. This guide covers the Next.js 15 implementation with App Router.
+The Next.js version of Trading Agents provides a full-stack React framework with server-side rendering, static generation, and advanced optimization features. This guide covers the Next.js 15 implementation with App Router.
 
 ## Overview
 
@@ -422,17 +422,17 @@ Add SEO metadata to pages:
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Dashboard - ShadcnStore Admin',
+  title: 'Dashboard - Trading Agents Admin',
   description: 'Comprehensive admin dashboard with analytics and management tools',
   keywords: ['dashboard', 'admin', 'analytics', 'management'],
   openGraph: {
-    title: 'Dashboard - ShadcnStore Admin',
+    title: 'Dashboard - Trading Agents Admin',
     description: 'Comprehensive admin dashboard with analytics and management tools',
     images: ['/og-dashboard.png'],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Dashboard - ShadcnStore Admin',
+    title: 'Dashboard - Trading Agents Admin',
     description: 'Comprehensive admin dashboard with analytics and management tools',
     images: ['/og-dashboard.png'],
   },

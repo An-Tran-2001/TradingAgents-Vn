@@ -12,7 +12,7 @@ export default function ForgotPassword2Page() {
             <div className="bg-primary text-primary-foreground flex size-8 items-center justify-center rounded-md">
               <Logo size={24} />
             </div>
-            ShadcnStore
+            Trading Agents
           </Link>
         </div>
         <div className="flex flex-1 items-center justify-center">

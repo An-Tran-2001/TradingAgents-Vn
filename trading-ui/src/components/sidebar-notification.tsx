@@ -35,7 +35,7 @@ export function SidebarNotification() {
                 rel="noopener noreferrer"
                 className="text-primary hover:underline"
               >
-                ShadcnStore
+                Trading Agents
               </a>
             </div>
           </h3>

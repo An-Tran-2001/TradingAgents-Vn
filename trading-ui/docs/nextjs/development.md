@@ -485,7 +485,7 @@ export default function RootLayout({
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Dashboard - ShadcnStore Admin',
+  title: 'Dashboard - Trading Agents Admin',
   description: 'View your dashboard analytics and metrics',
 }
 
@@ -534,7 +534,7 @@ Must be prefixed with `NEXT_PUBLIC_`:
 ```bash
 # .env.local
 NEXT_PUBLIC_API_URL=http://localhost:3001
-NEXT_PUBLIC_APP_NAME=ShadcnStore Admin
+NEXT_PUBLIC_APP_NAME=Trading Agents Admin
 ```
 
 ```typescript

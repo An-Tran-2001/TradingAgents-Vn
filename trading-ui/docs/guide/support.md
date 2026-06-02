@@ -39,7 +39,7 @@ Join our community for real-time help:
 - [Discord Server](https://discord.com/invite/XEQhPc9a6p) (if available)
 
 ### Social Media
-- **Twitter**: [@ShadcnStore](https://twitter.com/shadcnstore)
+- **Twitter**: [@Trading Agents](https://twitter.com/shadcnstore)
 - **LinkedIn**: [SiliconDeck](https://linkedin.com/company/silicondeck)
 
 ## Commercial Support
@@ -171,7 +171,7 @@ A:
 
 ## Professional Support
 
-### ShadcnStore Premium Support
+### Trading Agents Premium Support
 
 For enterprise customers and complex implementations:
 
@@ -209,7 +209,7 @@ Subscribe to our channel for video tutorials:
 - Advanced theming techniques
 - Real-world implementation examples
 
-[ShadcnStore YouTube](https://youtube.com/@shadcnstore)
+[Trading Agents YouTube](https://youtube.com/@shadcnstore)
 
 ### Blog Articles
 
@@ -220,7 +220,7 @@ Read in-depth articles about:
 - Performance optimization techniques
 - Modern UI/UX trends
 
-[ShadcnStore Blog](https://shadcnstore.com/blog)
+[Trading Agents Blog](https://shadcnstore.com/blog)
 
 ### Example Projects
 
@@ -279,7 +279,7 @@ Contact [community@shadcnstore.com](mailto:community@shadcnstore.com) if interes
 
 **Stay Connected**
 - Twitter: [@shadcnstore](https://twitter.com/shadcnstore)
-- LinkedIn: [ShadcnStore](https://linkedin.com/company/shadcnstore)
+- LinkedIn: [Trading Agents](https://linkedin.com/company/shadcnstore)
 - GitHub: [silicondeck](https://github.com/silicondeck)
 
 ### Response Times

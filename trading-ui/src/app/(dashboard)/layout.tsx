@@ -22,7 +22,7 @@ export default function DashboardLayout({
         "--sidebar-width-icon": "3rem",
         "--header-height": "calc(var(--spacing) * 14)",
       } as React.CSSProperties}
-      className={config.collapsible === "none" ? "sidebar-none-mode" : ""}
+      className={`h-svh overflow-hidden ${config.collapsible === "none" ? "sidebar-none-mode" : ""}`}
     >
       {config.side === "left" ? (
         <>
@@ -31,7 +31,7 @@ export default function DashboardLayout({
             collapsible={config.collapsible}
             side={config.side}
           />
-          <SidebarInset>
+          <SidebarInset className="h-svh overflow-hidden flex flex-col">
             <SiteHeader onSettingsClick={() => setThemeCustomizerOpen(true)} />
             <div className="flex flex-1 flex-col min-h-0 overflow-hidden">
               <div className="@container/main flex flex-1 flex-col min-h-0">
@@ -44,7 +44,7 @@ export default function DashboardLayout({
         </>
       ) : (
         <>
-          <SidebarInset>
+          <SidebarInset className="h-svh overflow-hidden flex flex-col">
             <SiteHeader onSettingsClick={() => setThemeCustomizerOpen(true)} />
             <div className="flex flex-1 flex-col min-h-0 overflow-hidden">
               <div className="@container/main flex flex-1 flex-col min-h-0">

@@ -117,7 +117,7 @@ Create `.env.production`:
 
 ```bash
 # Application
-NEXT_PUBLIC_APP_NAME="ShadcnStore Admin"
+NEXT_PUBLIC_APP_NAME="Trading Agents Admin"
 NEXT_PUBLIC_APP_URL="https://yourdomain.com"
 
 # API Configuration

@@ -84,7 +84,7 @@ export function LandingNavbar() {
           <Link href="https://shadcnstore.com" className="flex items-center space-x-2 cursor-pointer" target='_blank' rel="noopener noreferrer">
             <Logo size={32} />
             <span className="font-bold">
-              ShadcnStore
+              Trading Agents
             </span>
           </Link>
         </div>
@@ -161,7 +161,7 @@ export function LandingNavbar() {
                   <div className="p-2 bg-primary/10 rounded-lg">
                     <Logo size={16} />
                   </div>
-                  <SheetTitle className="text-lg font-semibold">ShadcnStore</SheetTitle>
+                  <SheetTitle className="text-lg font-semibold">Trading Agents</SheetTitle>
                   <div className="ml-auto flex items-center gap-2">
                     <Button
                       variant="ghost"

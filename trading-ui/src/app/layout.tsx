@@ -5,6 +5,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { SidebarConfigProvider } from "@/contexts/sidebar-context";
 import { LanguageProvider } from "@/contexts/language-context";
 import { inter } from "@/lib/fonts";
+import { Toaster } from "@/components/ui/sonner";
 
 export const metadata: Metadata = {
   title: "Trading Agents VN",
@@ -23,6 +24,7 @@ export default function RootLayout({
           <LanguageProvider>
             <SidebarConfigProvider>
               {children}
+              <Toaster />
             </SidebarConfigProvider>
           </LanguageProvider>
         </ThemeProvider>

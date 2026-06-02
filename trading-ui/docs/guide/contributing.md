@@ -486,7 +486,7 @@ All contributors are recognized in:
 ### Community
 - [GitHub Repository](https://github.com/silicondeck/shadcn-dashboard-landing-template)
 - [Discord Server](https://discord.com/invite/XEQhPc9a6p)
-- [ShadcnStore](https://shadcnstore.com) - Premium components and templates
+- [Trading Agents](https://shadcnstore.com) - Premium components and templates
 
 ## Getting Help
 

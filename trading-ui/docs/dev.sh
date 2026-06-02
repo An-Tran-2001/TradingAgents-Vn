@@ -3,7 +3,7 @@
 # Documentation Development Server
 # This script starts the VitePress development server for the Shadcn Dashboard + Landing Page Template documentation
 
-echo "🚀 Starting ShadcnStore Documentation Server..."
+echo "🚀 Starting Trading Agents Documentation Server..."
 echo ""
 
 # Check if we're in the docs directory

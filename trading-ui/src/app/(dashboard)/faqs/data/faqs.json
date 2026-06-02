@@ -1,8 +1,8 @@
 [
   {
     "id": 1,
-    "question": "What is ShadcnStore Admin?",
-    "answer": "ShadcnStore Admin is a comprehensive admin dashboard template built with React, TypeScript, and shadcn/ui components. It provides a complete solution for managing your e-commerce store or business operations.",
+    "question": "What is Trading Agents Admin?",
+    "answer": "Trading Agents Admin is a comprehensive admin dashboard template built with React, TypeScript, and shadcn/ui components. It provides a complete solution for managing your e-commerce store or business operations.",
     "category": "General"
   },
   {

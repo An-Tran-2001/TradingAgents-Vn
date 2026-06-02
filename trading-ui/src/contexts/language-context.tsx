@@ -1,6 +1,6 @@
 "use client"
 
-import React, { createContext, useContext, useState, useEffect } from "react"
+import React, { createContext, useContext, useState } from "react"
 
 export type Language = "en" | "vi"
 
@@ -194,13 +194,40 @@ const translations = {
     "jobs.tableHistory": "Recent Runs",
     "jobs.tableActions": "Actions",
     "jobs.viewLogs": "View Logs",
+
+    // Deliveries Page
+    "sidebar.deliveries": "Deliveries",
+    "deliveries.title": "Delivery History",
+    "deliveries.subtitle": "Track automated and manual report distributions via Email and Telegram.",
+    "deliveries.refresh": "Refresh Logs",
+    "deliveries.manualBroadcast": "Manual Broadcast",
+    "deliveries.search": "Search by Ticker or Recipient...",
+    "deliveries.status": "Status",
+    "deliveries.allStatuses": "All Statuses",
+    "deliveries.success": "Success",
+    "deliveries.failed": "Failed",
+    "deliveries.pending": "Pending",
+    "deliveries.table.id": "Delivery ID",
+    "deliveries.table.target": "Target",
+    "deliveries.table.channel": "Channel",
+    "deliveries.table.source": "Trigger Source",
+    "deliveries.table.status": "Status",
+    "deliveries.table.time": "Time",
+    "deliveries.table.actions": "Actions",
+    "deliveries.table.noLogs": "No delivery logs found.",
+    "deliveries.action.view": "View",
+    "deliveries.action.resend": "Resend",
+    "deliveries.dialog.title": "Sent Report:",
+    "deliveries.dialog.deliveredTo": "Delivered to",
+    "deliveries.dialog.via": "via",
+    "deliveries.dialog.on": "on",
   },
   vi: {
     // Sidebar
     "sidebar.features": "Tính năng",
     "sidebar.system": "Hệ thống",
     "sidebar.home": "Trang chủ",
-    "sidebar.agents": "Agents Phân Tích",
+    "sidebar.agents": "Agents Chat",
     "sidebar.reports": "Lịch Sử Báo Cáo",
     "sidebar.jobs": "Lịch Trình Chạy",
     "sidebar.analyst": "Bảng Thống Kê",
@@ -212,7 +239,7 @@ const translations = {
     "sidebar.subtitle": "Hệ Thống Tài Chính AI",
 
     // Dashboard (Analyst Page)
-    "dashboard.title": "Bảng Điều Khiển Hệ Thống",
+    "dashboard.title": "Bảng Thống Kê Hệ Thống",
     "dashboard.activeAgents": "Trading Agents Hoạt Động",
     "dashboard.newlyDeployed": "+3 mới triển khai tuần này",
     "dashboard.activeStrategies": "Trên 4 chiến thuật kích hoạt",
@@ -384,6 +411,33 @@ const translations = {
     "jobs.tableHistory": "Lịch Sử Chạy",
     "jobs.tableActions": "Hành Động",
     "jobs.viewLogs": "Xem Logs",
+
+    // Deliveries Page
+    "sidebar.deliveries": "Lịch Sử Gửi Báo Cáo",
+    "deliveries.title": "Lịch Sử Gửi Báo Cáo",
+    "deliveries.subtitle": "Theo dõi các lượt gửi báo cáo tự động và thủ công qua Email và Telegram.",
+    "deliveries.refresh": "Làm Mới",
+    "deliveries.manualBroadcast": "Gửi Thủ Công",
+    "deliveries.search": "Tìm mã CK hoặc người nhận...",
+    "deliveries.status": "Trạng Thái",
+    "deliveries.allStatuses": "Tất cả trạng thái",
+    "deliveries.success": "Thành công",
+    "deliveries.failed": "Thất bại",
+    "deliveries.pending": "Đang chờ",
+    "deliveries.table.id": "Mã Gửi",
+    "deliveries.table.target": "Mục Tiêu",
+    "deliveries.table.channel": "Kênh",
+    "deliveries.table.source": "Nguồn Gửi",
+    "deliveries.table.status": "Trạng Thái",
+    "deliveries.table.time": "Thời Gian",
+    "deliveries.table.actions": "Thao Tác",
+    "deliveries.table.noLogs": "Không tìm thấy lịch sử phân phối nào.",
+    "deliveries.action.view": "Xem Báo Cáo",
+    "deliveries.action.resend": "Gửi Lại",
+    "deliveries.dialog.title": "Báo Cáo Đã Gửi:",
+    "deliveries.dialog.deliveredTo": "Đã gửi đến",
+    "deliveries.dialog.via": "qua",
+    "deliveries.dialog.on": "vào lúc",
   }
 }
 
@@ -395,17 +449,14 @@ type LanguageContextType = {
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined)
 
-export function LanguageProvider({ children }: { children: React.ReactNode }) {
-  const [language, setLanguageState] = useState<Language>("en")
+function getInitialLanguage(): Language {
+  if (typeof window === "undefined") return "en"
+  const stored = localStorage.getItem("app-language") as Language
+  return stored === "en" || stored === "vi" ? stored : "en"
+}
 
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const stored = localStorage.getItem("app-language") as Language
-      if (stored === "en" || stored === "vi") {
-        setLanguageState(stored)
-      }
-    }
-  }, [])
+export function LanguageProvider({ children }: { children: React.ReactNode }) {
+  const [language, setLanguageState] = useState<Language>(getInitialLanguage)
 
   const setLanguage = (lang: Language) => {
     setLanguageState(lang)

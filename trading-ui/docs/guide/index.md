@@ -2,7 +2,7 @@
 
 A modern, open-source admin dashboard & landing page template built with React + TypeScript, supporting both Vite and Next.js. Powered by shadcn/ui v3 and Tailwind CSS v4 with real-time theme customization.
 
-Developed by [ShadcnStore](https://shadcnstore.com) to accelerate your development process with production-ready components and layouts.
+Developed by [Trading Agents](https://shadcnstore.com) to accelerate your development process with production-ready components and layouts.
 
 ## What's Included
 
@@ -54,4 +54,4 @@ Developed by [ShadcnStore](https://shadcnstore.com) to accelerate your developme
 
 **Ready to start?** → **[Install the template](/guide/installation)** and begin building!
 
-_By **[ShadcnStore](https://shadcnstore.com)** - Premium UI components and templates._
+_By **[Trading Agents](https://shadcnstore.com)** - Premium UI components and templates._

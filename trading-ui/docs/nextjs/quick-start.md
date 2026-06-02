@@ -142,7 +142,7 @@ Create environment files in the project root:
 
 ```bash
 # Application
-NEXT_PUBLIC_APP_NAME="ShadcnStore Admin"
+NEXT_PUBLIC_APP_NAME="Trading Agents Admin"
 NEXT_PUBLIC_APP_DESCRIPTION="Modern admin dashboard template"
 
 # API Configuration

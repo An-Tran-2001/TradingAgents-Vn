@@ -8,6 +8,7 @@ import {
   History,
   CalendarClock,
   Home,
+  Send,
 } from "lucide-react"
 import Link from "next/link"
 import { Logo } from "@/components/logo"
@@ -57,6 +58,11 @@ const data = {
           title: "Analyst System",
           url: "/dashboard",
           icon: LayoutDashboard,
+        },
+        {
+          title: "Deliveries",
+          url: "/deliveries",
+          icon: Send,
         },
       ],
     },

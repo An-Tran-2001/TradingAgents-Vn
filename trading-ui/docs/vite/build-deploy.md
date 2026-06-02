@@ -90,7 +90,7 @@ Vercel provides zero-configuration deployment for Vite applications:
 3. **Environment Variables:**
    ```bash
    # Add environment variables in Vercel dashboard
-   VITE_APP_NAME=ShadcnStore Admin
+   VITE_APP_NAME=Trading Agents Admin
    VITE_API_URL=https://api.yourdomain.com
    ```
 
@@ -121,7 +121,7 @@ pnpm build
 dist
 
 # Environment variables
-VITE_APP_NAME=ShadcnStore Admin
+VITE_APP_NAME=Trading Agents Admin
 ```
 
 #### Netlify Configuration
@@ -327,12 +327,12 @@ Configure environment-specific variables:
 
 ```bash
 # .env.local (development)
-VITE_APP_NAME=ShadcnStore Admin (Dev)
+VITE_APP_NAME=Trading Agents Admin (Dev)
 VITE_API_URL=http://localhost:3001
 VITE_DEBUG=true
 
 # .env.production (production)
-VITE_APP_NAME=ShadcnStore Admin
+VITE_APP_NAME=Trading Agents Admin
 VITE_API_URL=https://api.yourdomain.com
 VITE_DEBUG=false
 ```

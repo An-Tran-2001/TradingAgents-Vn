@@ -17,9 +17,9 @@
 
 </div>
 
-Introducing a sleek, modern, and open-source admin dashboard template built with the latest web technologies, including React + TypeScript + Vite and Next.js + TypeScript. Powered by shadcn/ui v3 and Tailwind CSS v4, this project offers a clean, responsive, and highly customizable UI. Developed and maintained by [ShadcnStore](https://shadcnstore.com), this free and open-source template is designed to accelerate your development process. Whether you're building an admin panel, SaaS dashboard, or launching an AI-driven product, this dashboard provides a beautiful, production-ready interface for your application — complete with a seamless dashboard and a fully-featured landing page to help you hit the ground running.
+Introducing a sleek, modern, and open-source admin dashboard template built with the latest web technologies, including React + TypeScript + Vite and Next.js + TypeScript. Powered by shadcn/ui v3 and Tailwind CSS v4, this project offers a clean, responsive, and highly customizable UI. Developed and maintained by [Trading Agents](https://shadcnstore.com), this free and open-source template is designed to accelerate your development process. Whether you're building an admin panel, SaaS dashboard, or launching an AI-driven product, this dashboard provides a beautiful, production-ready interface for your application — complete with a seamless dashboard and a fully-featured landing page to help you hit the ground running.
 
-🚀 **Free & Open Source** by [**ShadcnStore**](https://shadcnstore.com) - Your gateway to premium UI components and templates.
+🚀 **Free & Open Source** by [**Trading Agents**](https://shadcnstore.com) - Your gateway to premium UI components and templates.
 
 
 ---
@@ -434,9 +434,9 @@ If you want to remove the theme customizer from your project:
 
 ---
 
-## 🚀 Take It Further with ShadcnStore
+## 🚀 Take It Further with Trading Agents
 
-This free template is just the beginning! **ShadcnStore** offers a complete ecosystem of free & premium UI components, dashboards and templates to accelerate your development:
+This free template is just the beginning! **Trading Agents** offers a complete ecosystem of free & premium UI components, dashboards and templates to accelerate your development:
 
 ### **🎁 Available Now**
 
@@ -459,7 +459,7 @@ This free template is just the beginning! **ShadcnStore** offers a complete ecos
 - **E-commerce** - Online store interfaces
 - **Internal Tools** - Admin panels and dashboards
 
-> **🎯 [Explore ShadcnStore](https://shadcnstore.com)** - Premium blocks, dashboards and templates for modern web applications.
+> **🎯 [Explore Trading Agents](https://shadcnstore.com)** - Premium blocks, dashboards and templates for modern web applications.
 
 ---
 
@@ -505,7 +505,7 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 - ✅ Include in private projects
 - ✅ Sell products built with this template
 
-**Attribution to [ShadcnStore](https://shadcnstore.com) is appreciated but not required.**
+**Attribution to [Trading Agents](https://shadcnstore.com) is appreciated but not required.**
 
 ---
 
@@ -533,7 +533,7 @@ This template is built on the shoulders of amazing open-source projects:
 
 ### **Stay Connected**
 
-- 🌐 **Website** - [ShadcnStore.com](https://shadcnstore.com)
+- 🌐 **Website** - [Trading Agents.com](https://shadcnstore.com)
 - 🐦 **Twitter** - [@shadcnstore](https://twitter.com/shadcnstore)
 - 💬 **Discord** - [Join our server](https://discord.com/invite/XEQhPc9a6p)
 - 📧 **Email** - [hello@shadcnstore.com](mailto:hello@shadcnstore.com)
@@ -544,8 +544,8 @@ This template is built on the shoulders of amazing open-source projects:
 
 **⭐ Star this repo if it helped you!**
 
-[![ShadcnStore](https://img.shields.io/badge/Built%20by-ShadcnStore-blue?style=for-the-badge)](https://shadcnstore.com)
+[![Trading Agents](https://img.shields.io/badge/Built%20by-Trading Agents-blue?style=for-the-badge)](https://shadcnstore.com)
 
-_A free & open-source template by **[ShadcnStore](https://shadcnstore.com)** - Premium UI components, dashboards and templates for modern web development._
+_A free & open-source template by **[Trading Agents](https://shadcnstore.com)** - Premium UI components, dashboards and templates for modern web development._
 
 </div>

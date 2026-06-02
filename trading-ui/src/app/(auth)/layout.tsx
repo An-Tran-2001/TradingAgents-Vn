@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Authentication - ShadcnStore",
+  title: "Authentication - Trading Agents",
   description: "Sign in to your account or create a new one",
 };
 
