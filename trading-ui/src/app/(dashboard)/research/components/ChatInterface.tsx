@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef } from "react"
+import ReactMarkdown from "react-markdown"
+import remarkGfm from "remark-gfm"
 import { useLanguage } from "@/contexts/language-context"
 import { 
   History, 
@@ -10,7 +12,8 @@ import {
   User, 
   Activity, 
   Search, 
-  Send 
+  Send,
+  BookOpen
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Message } from "./types"
@@ -147,17 +150,81 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                       {msg.role === "user" ? "You" : msg.agentRole}
                     </span>
                   </div>
-                  <div className={`text-[15px] leading-relaxed w-full ${
+                  <div className={`text-[15px] leading-relaxed w-full prose prose-sm dark:prose-invert max-w-none ${
                     msg.role === "user"
                       ? "bg-muted/50 px-5 py-3.5 rounded-2xl rounded-tr-sm inline-block w-auto"
                       : "bg-card/40 backdrop-blur-sm border border-border/50 px-6 py-5 rounded-2xl rounded-tl-sm shadow-sm"
                   }`}>
-                    {msg.content}
+                    {typeof msg.content === 'string' ? (
+                      <ReactMarkdown 
+                        remarkPlugins={[remarkGfm]}
+                        components={{
+                          table: ({node, ...props}) => (
+                            <div className="overflow-x-auto my-4 rounded-lg border border-border/50">
+                              <table className="w-full text-sm text-left" {...props} />
+                            </div>
+                          ),
+                          thead: ({node, ...props}) => <thead className="bg-muted/50 text-xs uppercase" {...props} />,
+                          th: ({node, ...props}) => <th className="px-4 py-3 font-medium text-foreground" {...props} />,
+                          td: ({node, ...props}) => <td className="px-4 py-3 border-t border-border/50 text-muted-foreground" {...props} />,
+                          a: ({node, href, children, ...props}) => {
+                            if (href?.startsWith('citation:')) {
+                              return (
+                                <div className="my-3 block">
+                                  <a href={href} className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-all no-underline cursor-pointer group shadow-sm" {...props}>
+                                    <BookOpen className="h-4 w-4 group-hover:scale-110 transition-transform" />
+                                    <span className="font-medium text-sm">{children}</span>
+                                  </a>
+                                </div>
+                              );
+                            }
+                            return <a href={href} className="text-primary hover:underline font-medium" {...props}>{children}</a>;
+                          },
+                          pre: ({node, ...props}) => (
+                            <div className="my-4 rounded-lg overflow-hidden border border-border/50 bg-background/50 shadow-sm">
+                              <pre className="p-4 overflow-x-auto text-sm" {...props} />
+                            </div>
+                          ),
+                          code: ({node, className, children, ...props}) => {
+                            return (
+                              <code className={`${className || ''} bg-muted/50 text-primary px-1.5 py-0.5 rounded text-[13px] font-mono`} {...props}>
+                                {children}
+                              </code>
+                            )
+                          }
+                        }}
+                      >
+                        {msg.content}
+                      </ReactMarkdown>
+                    ) : (
+                      msg.content
+                    )}
                   </div>
                   <span className="text-xs text-muted-foreground px-1">{msg.timestamp}</span>
                 </div>
               </div>
             ))
+          )}
+          
+          {/* Typing Indicator */}
+          {isTyping && (
+            <div className="flex gap-4 flex-row animate-in fade-in slide-in-from-bottom-2">
+              <div className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-[0_0_15px_rgba(var(--primary),0.4)]">
+                <Activity className="h-4 w-4" />
+              </div>
+              <div className="flex flex-col gap-1.5 items-start w-full max-w-[85%]">
+                <div className="flex items-center gap-2 px-1">
+                  <span className="text-sm font-semibold">Tauric Nexus</span>
+                </div>
+                <div className="bg-card/40 backdrop-blur-sm border border-border/50 px-6 py-5 rounded-2xl rounded-tl-sm shadow-sm flex items-center h-[62px]">
+                  <div className="flex gap-1.5">
+                    <div className="h-2 w-2 rounded-full bg-primary/60 animate-bounce [animation-delay:-0.3s]"></div>
+                    <div className="h-2 w-2 rounded-full bg-primary/60 animate-bounce [animation-delay:-0.15s]"></div>
+                    <div className="h-2 w-2 rounded-full bg-primary/60 animate-bounce"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
           )}
         </div>
       </div>

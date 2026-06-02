@@ -7,16 +7,26 @@ from app.routers.v1.agent_reports.models.non_relational import TokenUsage, Agent
 
 logger = logging.getLogger(__name__)
 
-class MongoStatsCallbackHandler(AsyncCallbackHandler):
-    """Callback handler that tracks LLM token usage and saves to MongoDB asynchronously."""
+from langchain_core.callbacks import BaseCallbackHandler
+
+class MongoStatsCallbackHandler(BaseCallbackHandler):
+    """Callback handler that tracks LLM token usage and saves to MongoDB."""
 
     def __init__(self, user_id: int, message_id: Optional[int] = None, report_id: Optional[int] = None):
         super().__init__()
         self.user_id = user_id
         self.message_id = message_id
         self.report_id = report_id
+        import asyncio
+        try:
+            self.main_loop = asyncio.get_running_loop()
+        except RuntimeError:
+            self.main_loop = None
 
-    async def on_llm_end(self, response: LLMResult, **kwargs: Any) -> None:
+    def on_chat_model_start(self, *args, **kwargs) -> None:
+        pass
+
+    def on_llm_end(self, response: LLMResult, **kwargs: Any) -> None:
         """Extract token usage from LLM response and save to MongoDB."""
         try:
             generation = response.generations[0][0]
@@ -51,6 +61,11 @@ class MongoStatsCallbackHandler(AsyncCallbackHandler):
                     completion_tokens=completion_tokens,
                     total_tokens=total_tokens
                 )
-                await usage.insert()
+                if self.main_loop and self.main_loop.is_running():
+                    import asyncio
+                    asyncio.run_coroutine_threadsafe(usage.insert(), self.main_loop)
+                else:
+                    import asyncio
+                    asyncio.run(usage.insert())
             except Exception as e:
                 logger.error(f"Failed to save TokenUsage to MongoDB: {e}")

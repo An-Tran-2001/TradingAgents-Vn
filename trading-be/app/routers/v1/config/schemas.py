@@ -13,6 +13,7 @@ class ProviderInfo(BaseModel):
     name: str
     base_url: Optional[str]
     requires_api_key: bool
+    is_ready: bool
     regions: Optional[List[str]] = None  # for providers with multi-region (qwen, glm, minimax)
 
 

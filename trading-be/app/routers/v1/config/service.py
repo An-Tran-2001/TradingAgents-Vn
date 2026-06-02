@@ -5,6 +5,7 @@ and cli.utils._llm_provider_table).
 
 No DB. No external calls. Pure in-memory computation.
 """
+import os
 from typing import List, Optional, Dict
 from fastapi import HTTPException
 
@@ -226,6 +227,27 @@ _MODEL_CATALOG["qwen-cn"] = _MODEL_CATALOG["qwen"]
 _MODEL_CATALOG["glm-cn"] = _MODEL_CATALOG["glm"]
 _MODEL_CATALOG["minimax-cn"] = _MODEL_CATALOG["minimax"]
 
+_API_KEY_MAPPING = {
+    "openai": ["OPENAI_API_KEY"],
+    "google": ["GEMINI_API_KEY", "GOOGLE_API_KEY"],
+    "anthropic": ["ANTHROPIC_API_KEY"],
+    "xai": ["XAI_API_KEY"],
+    "deepseek": ["DEEPSEEK_API_KEY"],
+    "qwen": ["DASHSCOPE_API_KEY"],
+    "qwen-cn": ["DASHSCOPE_CN_API_KEY"],
+    "glm": ["ZHIPU_API_KEY"],
+    "glm-cn": ["ZHIPU_CN_API_KEY"],
+    "minimax": ["MINIMAX_API_KEY"],
+    "minimax-cn": ["MINIMAX_CN_API_KEY"],
+    "openrouter": ["OPENROUTER_API_KEY"],
+    "azure": ["AZURE_OPENAI_API_KEY"],
+}
+
+def _check_provider_ready(provider_id: str, requires_api_key: bool) -> bool:
+    if not requires_api_key:
+        return True
+    env_vars = _API_KEY_MAPPING.get(provider_id, [])
+    return any(bool(os.getenv(env_var)) for env_var in env_vars)
 
 class ConfigService:
     def list_providers(self) -> List[ProviderInfo]:
@@ -235,6 +257,7 @@ class ConfigService:
                 name=p["name"],
                 base_url=p.get("base_url"),
                 requires_api_key=p["requires_api_key"],
+                is_ready=_check_provider_ready(p["id"], p["requires_api_key"]),
                 regions=p.get("regions"),
             )
             for p in _PROVIDERS
@@ -250,6 +273,7 @@ class ConfigService:
             name=provider_data["name"],
             base_url=provider_data.get("base_url"),
             requires_api_key=provider_data["requires_api_key"],
+            is_ready=_check_provider_ready(provider_data["id"], provider_data["requires_api_key"]),
             regions=provider_data.get("regions"),
         )
 

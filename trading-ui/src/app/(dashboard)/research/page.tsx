@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react"
 import { useLanguage } from "@/contexts/language-context"
+import Cookies from "js-cookie"
 import {
   BarChart3,
   Scale,
@@ -16,94 +17,135 @@ import { PipelineVisualization } from "./components/PipelineVisualization"
 import { CliLogViewer } from "./components/CliLogViewer"
 import { ChatInterface } from "./components/ChatInterface"
 import { SettingsPanel } from "./components/SettingsPanel"
-import { Message } from "./components/types"
+import { FinalReport } from "./components/FinalReport"
+import { Message, AgentLog } from "./components/types"
+import { agentChatsApi } from "@/lib/api/agent_chats"
+
+const AGENT_STEP_MAP: Record<string, number> = {
+  "Fundamentals Analyst": 1,
+  "Sentiment Analyst": 2,
+  "News Analyst": 3,
+  "Technical Analyst": 4,
+  "Bull Researcher": 5,
+  "Bear Researcher": 6,
+  "Research Manager": 7,
+  "Aggressive Analyst": 8,
+  "Conservative Analyst": 8,
+  "Neutral Analyst": 8,
+  "Risk Management": 8,
+  "Portfolio Manager": 9,
+  "Trader": 10,
+  "System": 11
+};
 
 export default function AgentsResearchPage() {
-  const { t } = useLanguage()
+  const { t, language } = useLanguage()
   const [messages, setMessages] = useState<Message[]>([])
   const [ticker, setTicker] = useState("")
   
+  const [logs, setLogs] = useState<AgentLog[]>([])
+  const [sessionId, setSessionId] = useState<number | null>(null)
+  
   // Cyberpunk Workflow State
   const [isTyping, setIsTyping] = useState(false)
+  const [isResearching, setIsResearching] = useState(false)
   const [logAnimationStep, setLogAnimationStep] = useState(0)
-  const [activeLogTab, setActiveLogTab] = useState<"All" | "Fundamentals Analyst" | "Sentiment Analyst" | "News Analyst" | "Technical Analyst" | "Bull Researcher" | "Bear Researcher" | "Research Manager" | "Risk Management" | "Portfolio Manager" | "Trader">("All")
+  const [activeLogTab, setActiveLogTab] = useState<string>("All")
   
   // History Sidebar State
   const [isHistoryOpen, setIsHistoryOpen] = useState(false)
+  const [refreshSidebarTrigger, setRefreshSidebarTrigger] = useState(0)
 
-  // Timer for log animation
-  useEffect(() => {
-    if (isTyping) {
-      setLogAnimationStep(0)
-      const timer = setInterval(() => {
-        setLogAnimationStep(prev => {
-          if (prev < 12) return prev + 1
-          clearInterval(timer)
-          
-          // Complete the pipeline and show report
-          setTimeout(() => {
-            setIsTyping(false)
-            setActiveLogTab("All")
-            
-            setMessages((msgs) => {
-              // Prevent duplicate report on replay
-              const targetTicker = ticker || "the requested market"
-              const lastMsg = msgs[msgs.length - 1]
-              if (lastMsg && lastMsg.role === "agent" && lastMsg.content && (lastMsg.content as any)?.props?.children?.[0]?.props?.children?.[2]?.props?.children === targetTicker) {
-                return msgs
-              }
+  const handleSelectSession = async (selectedSessionId: number) => {
+    try {
+      setIsHistoryOpen(false);
+      setSessionId(selectedSessionId);
+      setIsTyping(false);
+      setIsResearching(false);
+      setLogs([]);
+      setLogAnimationStep(0);
+      
+      const sessionData = await agentChatsApi.getSessionDetails(selectedSessionId);
+      
+      if (sessionData.ticker) {
+        setTicker(sessionData.ticker);
+      }
+
+      if (sessionData.messages) {
+        let restoredLogs: AgentLog[] = [];
+        
+        const loadedMsgs = sessionData.messages.map((m: any) => {
+          let content = m.content;
+          try {
+            if (content.startsWith('{"type": "final_report"')) {
+              const parsed = JSON.parse(content);
+              content = (
+                <div className="space-y-4">
+                  <FinalReport 
+                    ticker={sessionData.ticker || "Asset"} 
+                    finalState={parsed.state} 
+                    onReplay={replayWorkflow} 
+                  />
+                </div>
+              );
               
-              return [
-                ...msgs,
-                {
-                  id: (Date.now() + 1).toString(),
-                  role: "agent",
-                  agentRole: "Tauric Nexus",
-                  content: (
-                    <div className="space-y-4">
-                      <p>Pipeline synthesis complete for <strong>{targetTicker}</strong>.</p>
-                      <div className="rounded-lg bg-card/50 p-4 border border-primary/10 shadow-sm">
-                        <h4 className="font-semibold mb-2 flex items-center gap-2"><BarChart3 className="h-4 w-4 text-cyan-500"/> Market Analysis</h4>
-                        <p className="text-sm text-muted-foreground">Analyst Team reported strong consolidation. Technicals suggest a potential breakout despite short-term neutral action.</p>
-                      </div>
-                      <div className="rounded-lg bg-card/50 p-4 border border-primary/10 shadow-sm">
-                        <h4 className="font-semibold mb-2 flex items-center gap-2"><Scale className="h-4 w-4 text-pink-500"/> Debate Conclusion</h4>
-                        <p className="text-sm text-muted-foreground">Bearish debaters noted macroeconomic headwinds, but the Bullish consensus prevailed due to institutional buying pressure and accumulation patterns. Research Manager approved Bullish thesis.</p>
-                      </div>
-                      <div className="rounded-lg bg-card/50 p-4 border border-green-500/20 bg-green-500/5 shadow-[0_0_15px_rgba(34,197,94,0.1)]">
-                        <h4 className="font-semibold mb-2 flex items-center gap-2 text-green-500"><ShieldCheck className="h-4 w-4"/> Execution Order</h4>
-                        <p className="text-sm font-medium text-green-400">RECOMMENDATION: ACCUMULATE (Target Allocation 1.5%)</p>
-                      </div>
-                      <div className="pt-2 border-t border-primary/10 flex justify-end">
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          onClick={() => replayWorkflow(targetTicker)}
-                          className="text-xs h-8 border-primary/20 hover:border-primary/50 text-muted-foreground hover:text-primary transition-all flex items-center gap-1.5"
-                        >
-                          <RotateCcw className="h-3.5 w-3.5" /> Replay Workflow
-                        </Button>
-                      </div>
-                    </div>
-                  ),
-                  timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                }
-              ]
-            })
-          }, 1000)
-          return prev
-        })
-      }, 1000) // 1 step per second
-      return () => clearInterval(timer)
+              if (parsed.logs && parsed.logs.length > 0) {
+                 restoredLogs = parsed.logs.map((log: any) => ({
+                    step: log.step,
+                    time: log.time,
+                    agent: log.agent,
+                    type: log.log_type,
+                    content: log.content
+                 }));
+              }
+            }
+          } catch (e) {}
+          
+          return {
+            id: m.id.toString(),
+            role: m.role === "user" ? "user" : "assistant",
+            agentRole: m.agent_name || "Orchestrator",
+            content: content,
+            timestamp: new Date(m.created_at || m.timestamp || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          };
+        });
+        
+        setMessages(loadedMsgs);
+        if (restoredLogs.length > 0) {
+          setLogs(restoredLogs);
+          setLogAnimationStep(12);
+        } else {
+          setLogs([]);
+        }
+      } else {
+        setMessages([]);
+        setLogs([]);
+      }
+    } catch (e) {
+      console.error("Failed to load session details", e);
     }
-  }, [isTyping, ticker])
+  }
 
-  const handleSend = (text: string, suggestedTicker?: string) => {
+
+
+  const handleNewChat = () => {
+    setSessionId(null);
+    setMessages([]);
+    setTicker("");
+    setIsTyping(false);
+    setIsResearching(false);
+    setLogs([]);
+    setLogAnimationStep(0);
+    setIsHistoryOpen(false);
+  }
+
+  // No mock timer needed anymore
+
+  const handleSend = async (text: string, suggestedTicker?: string) => {
     if (!text.trim()) return
 
-    if (suggestedTicker) {
-      setTicker(suggestedTicker)
-    }
+    const activeTicker = suggestedTicker || ticker
+    if (activeTicker) setTicker(activeTicker)
 
     const newMsg: Message = {
       id: Date.now().toString(),
@@ -114,6 +156,215 @@ export default function AgentsResearchPage() {
 
     setMessages((prev) => [...prev, newMsg])
     setIsTyping(true)
+    setIsResearching(false)
+    setLogs([])
+    setLogAnimationStep(0)
+    
+    try {
+      let currentSessionId = sessionId;
+      if (!currentSessionId) {
+        const session = await agentChatsApi.createSession(text.substring(0, 50) + "...", activeTicker);
+        currentSessionId = session.id;
+        setSessionId(currentSessionId);
+        setRefreshSidebarTrigger(prev => prev + 1);
+      }
+      
+      // Get full config from local storage
+      let configPayload: any = { output_language: language };
+      try {
+        const savedSettings = localStorage.getItem("trading_research_settings");
+        if (savedSettings) {
+          const parsed = JSON.parse(savedSettings);
+          
+          const active_teams = [];
+          if (parsed.teamFundamentals) active_teams.push("Fundamentals");
+          if (parsed.teamSentiment) active_teams.push("Sentiment");
+          if (parsed.teamNews) active_teams.push("News");
+          if (parsed.teamTechnical) active_teams.push("Technical");
+
+          configPayload = {
+            ...configPayload,
+            llm_provider: parsed.selectedProvider || "openai",
+            model: parsed.useAdvancedModels ? undefined : (parsed.selectedModel || "gpt-4o"),
+            quick_think_model: parsed.useAdvancedModels ? (parsed.selectedQuickModel || parsed.selectedModel) : undefined,
+            deep_think_model: parsed.useAdvancedModels ? (parsed.selectedDeepModel || parsed.selectedModel) : undefined,
+            depth: parsed.depth || "medium",
+            reasoning_effort: parsed.effort || "high",
+            active_teams: active_teams.length > 0 ? active_teams : ["Fundamentals", "Sentiment", "News", "Technical"]
+          };
+        }
+      } catch (e) {
+        console.warn("Could not read settings from localStorage", e);
+      }
+      
+      // Inject chat history to provide context
+      const chatHistory = messages.map(msg => {
+        let contentStr = "";
+        if (typeof msg.content === 'string') {
+          contentStr = msg.content;
+        } else {
+          contentStr = "Research Complete. A detailed report has been generated.";
+        }
+        return {
+          role: msg.role === "user" ? "user" : "assistant",
+          content: contentStr
+        };
+      });
+      configPayload.chat_history = chatHistory;
+      
+      const res = await agentChatsApi.chatStream(currentSessionId as number, text, configPayload);
+      if (!res.body) throw new Error("No response body");
+      
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      
+      let finalState: any = null;
+      let finalContent: string = "";
+      
+      let activeMessageId: string | null = null;
+      let buffer = "";
+      
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        
+        buffer += decoder.decode(value, { stream: true });
+        
+        let boundary = buffer.indexOf("\n\n");
+        while (boundary !== -1) {
+          const line = buffer.slice(0, boundary).trim();
+          buffer = buffer.slice(boundary + 2);
+          
+          if (line.startsWith("data: ")) {
+            try {
+              const data = JSON.parse(line.slice(6));
+              
+              if (data.type === "text_chunk") {
+                setIsTyping(false); // Remove typing indicator since we are streaming text now
+                
+                if (!activeMessageId) {
+                  activeMessageId = Date.now().toString();
+                  setMessages(prev => [...prev, {
+                    id: activeMessageId!,
+                    role: "assistant",
+                    content: data.content,
+                    timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                  }]);
+                } else {
+                  setMessages(prev => prev.map(msg => 
+                    msg.id === activeMessageId 
+                      ? { ...msg, content: msg.content + data.content } 
+                      : msg
+                  ));
+                }
+              } else if (data.type === "done") {
+                setIsTyping(false); // Safety fallback
+              } else if (data.type === "text") {
+                // Fallback for older non-streaming API events
+                setMessages(prev => [...prev, {
+                  id: Date.now().toString(),
+                  role: "assistant",
+                  content: data.content,
+                  timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                }]);
+                setIsTyping(false);
+              } else if (data.type === "handoff") {
+                setIsResearching(true);
+                setMessages(prev => [...prev, {
+                  id: Date.now().toString(),
+                  role: "assistant",
+                  content: data.content || "Starting financial research pipeline...",
+                  timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                }]);
+              } else if (data.type === "agent_log") {
+                setIsResearching(true);
+                const newLog: AgentLog = {
+                  step: data.step,
+                  time: data.time,
+                  agent: data.agent,
+                  type: data.log_type,
+                  content: data.content
+                };
+                setLogs(prev => [...prev, newLog]);
+                
+                // Update log animation step based on mapped agent
+                const step = AGENT_STEP_MAP[data.agent];
+                if (step) {
+                  setLogAnimationStep(prev => Math.max(prev, step));
+                }
+              } else if (data.type === "pipeline_complete") {
+                finalState = data.final_state;
+                setLogAnimationStep(12); // Finish pipeline visually
+              } else if (data.type === "error" || data.type === "pipeline_error") {
+                setIsTyping(false);
+                setIsResearching(false);
+                setMessages(prev => [...prev, {
+                  id: Date.now().toString(),
+                  role: "assistant",
+                  content: `**⚠️ Error Encountered:**\n\n${data.content || "An unknown error occurred during execution."}`,
+                  timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                }]);
+              }
+            } catch (e) {
+              console.error("Failed to parse SSE chunk", e, "Line:", line);
+            }
+          }
+          boundary = buffer.indexOf("\n\n");
+        }
+      }
+      
+      // If we got a final state, show the complete report
+      if (finalState) {
+        setTimeout(() => {
+          setIsTyping(false);
+          setIsResearching(false);
+          setActiveLogTab("All");
+          
+          setMessages(prev => {
+            const lastMsg = prev[prev.length - 1];
+            if (lastMsg && (lastMsg.role === "assistant" || lastMsg.role === "agent")) {
+              return [
+                ...prev.slice(0, -1),
+                {
+                  ...lastMsg,
+                  content: (
+                    <div className="space-y-4">
+                      {typeof lastMsg.content === 'string' ? <p>{lastMsg.content}</p> : lastMsg.content}
+                      <FinalReport 
+                        ticker={activeTicker || "Asset"} 
+                        finalState={finalState} 
+                        onReplay={replayWorkflow} 
+                      />
+                    </div>
+                  )
+                }
+              ];
+            } else {
+              return [
+                ...prev,
+                {
+                  id: Date.now().toString(),
+                  role: "agent",
+                  agentRole: "Tauric Nexus",
+                  content: (
+                    <FinalReport 
+                      ticker={activeTicker || "Asset"} 
+                      finalState={finalState} 
+                      onReplay={replayWorkflow} 
+                    />
+                  ),
+                  timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                }
+              ];
+            }
+          });
+        }, 1000);
+      }
+      
+    } catch (e) {
+      console.error("Chat error:", e);
+      setIsTyping(false);
+    }
   }
 
   const replayWorkflow = (targetTicker: string) => {
@@ -130,17 +381,21 @@ export default function AgentsResearchPage() {
       <HistorySidebar 
         isOpen={isHistoryOpen} 
         onClose={() => setIsHistoryOpen(false)} 
+        onSelectSession={handleSelectSession}
+        onNewChat={handleNewChat}
+        refreshTrigger={refreshSidebarTrigger}
       />
       
       {/* Main Chat Area (Left/Center) */}
       <div className="flex flex-1 flex-col overflow-hidden relative z-10">
-        {isTyping ? (
+        {isResearching ? (
           <div className="flex h-full w-full flex-col p-4 sm:p-6 animate-in fade-in zoom-in-95 duration-700">
             {/* TOP HALF: Fantasy Pipeline Visualization */}
             <PipelineVisualization logAnimationStep={logAnimationStep} />
 
             {/* BOTTOM HALF: CLI-STYLE LOG VIEWER */}
             <CliLogViewer 
+              logs={logs}
               logAnimationStep={logAnimationStep}
               activeLogTab={activeLogTab}
               setActiveLogTab={setActiveLogTab}

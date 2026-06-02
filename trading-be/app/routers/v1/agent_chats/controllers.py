@@ -43,6 +43,31 @@ async def get_session_details(
         raise HTTPException(status_code=404, detail="Session not found")
     return session
 
+@router.put("/{session_id}", response_model=ChatSessionResponse)
+async def update_chat_session(
+    session_id: int,
+    request: ChatSessionCreate,
+    current_user: User = Depends(get_current_user),
+    chat_service: ChatService = Depends()
+) -> Any:
+    session = await chat_service.get_session(session_id)
+    if not session or session.user_id != current_user.id:
+        raise HTTPException(status_code=404, detail="Session not found")
+    updated = await chat_service.update_session(session_id, request.title)
+    return updated
+
+@router.delete("/{session_id}")
+async def delete_chat_session(
+    session_id: int,
+    current_user: User = Depends(get_current_user),
+    chat_service: ChatService = Depends()
+) -> Any:
+    session = await chat_service.get_session(session_id)
+    if not session or session.user_id != current_user.id:
+        raise HTTPException(status_code=404, detail="Session not found")
+    await chat_service.delete_session(session_id)
+    return {"message": "Session deleted successfully"}
+
 @router.post("/{session_id}/chat")
 async def chat_with_agent(
     session_id: int,

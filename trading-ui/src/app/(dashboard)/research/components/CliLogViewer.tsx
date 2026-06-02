@@ -34,13 +34,15 @@ const cliLogsData = [
 ]
 
 interface CliLogViewerProps {
+  logs: import('./types').AgentLog[]
   logAnimationStep: number
-  activeLogTab: "All" | "Fundamentals Analyst" | "Sentiment Analyst" | "News Analyst" | "Technical Analyst" | "Bull Researcher" | "Bear Researcher" | "Research Manager" | "Risk Management" | "Portfolio Manager" | "Trader"
-  setActiveLogTab: (tab: "All" | "Fundamentals Analyst" | "Sentiment Analyst" | "News Analyst" | "Technical Analyst" | "Bull Researcher" | "Bear Researcher" | "Research Manager" | "Risk Management" | "Portfolio Manager" | "Trader") => void
+  activeLogTab: "All" | "Fundamentals Analyst" | "Sentiment Analyst" | "News Analyst" | "Technical Analyst" | "Bull Researcher" | "Bear Researcher" | "Research Manager" | "Risk Management" | "Portfolio Manager" | "Trader" | string
+  setActiveLogTab: (tab: "All" | "Fundamentals Analyst" | "Sentiment Analyst" | "News Analyst" | "Technical Analyst" | "Bull Researcher" | "Bear Researcher" | "Research Manager" | "Risk Management" | "Portfolio Manager" | "Trader" | string) => void
   isTyping: boolean
 }
 
 export const CliLogViewer: React.FC<CliLogViewerProps> = ({
+  logs,
   logAnimationStep,
   activeLogTab,
   setActiveLogTab,
@@ -49,9 +51,8 @@ export const CliLogViewer: React.FC<CliLogViewerProps> = ({
   const { t } = useLanguage()
   const logScrollRef = useRef<HTMLDivElement>(null)
 
-  // Filter logs up to current animation step
-  const visibleLogs = cliLogsData.filter(log => log.step <= logAnimationStep)
-  const filteredLogs = activeLogTab === "All" ? visibleLogs : visibleLogs.filter(l => l.agent === activeLogTab)
+  // Use real logs
+  const filteredLogs = activeLogTab === "All" ? logs : logs.filter(l => l.agent === activeLogTab)
 
   // Auto-scroll logs
   useEffect(() => {

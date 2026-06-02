@@ -32,11 +32,17 @@ class ChatSessionResponse(BaseModel):
 
 class ChatRequest(BaseModel):
     message: str
+    chat_history: Optional[List[dict]] = None
     
     # Configuration from UI
     ticker: Optional[str] = None
+    analysis_date: Optional[str] = None
     llm_provider: Optional[str] = "openai"
     model: Optional[str] = "gpt-4o"
+    quick_think_model: Optional[str] = None
+    deep_think_model: Optional[str] = None
     depth: Optional[str] = "medium"
     reasoning_effort: Optional[str] = "medium"
+    output_language: Optional[str] = "en"
+    language: Optional[str] = None
     active_teams: Optional[List[str]] = Field(default_factory=lambda: ["Fundamentals", "Sentiment", "News", "Technical"])

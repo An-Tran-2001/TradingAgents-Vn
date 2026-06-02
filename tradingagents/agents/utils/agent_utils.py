@@ -30,6 +30,34 @@ from tradingagents.agents.utils.market_data_validation_tools import (
 logger = logging.getLogger(__name__)
 
 
+def _normalize_language_name(lang: str | None) -> str:
+    if not lang:
+        return "English"
+
+    mapping = {
+        "en": "English",
+        "english": "English",
+        "vi": "Vietnamese",
+        "vietnamese": "Vietnamese",
+        "ja": "Japanese",
+        "japanese": "Japanese",
+        "zh": "Chinese",
+        "chinese": "Chinese",
+        "fr": "French",
+        "french": "French",
+        "es": "Spanish",
+        "spanish": "Spanish",
+        "de": "German",
+        "german": "German",
+        "ko": "Korean",
+        "korean": "Korean",
+        "pt": "Portuguese",
+        "portuguese": "Portuguese",
+    }
+    candidate = str(lang).strip().lower()
+    return mapping.get(candidate, str(lang).strip().title())
+
+
 def get_language_instruction() -> str:
     """Return a prompt instruction for the configured output language.
 
@@ -40,7 +68,7 @@ def get_language_instruction() -> str:
     report rather than a mix of languages.
     """
     from tradingagents.dataflows.config import get_config
-    lang = get_config().get("output_language", "English")
+    lang = _normalize_language_name(get_config().get("output_language", "English"))
     if lang.strip().lower() == "english":
         return ""
     return f" Write your entire response in {lang}."

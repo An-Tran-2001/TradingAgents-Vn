@@ -1,6 +1,6 @@
 "use client"
 
-import React, { createContext, useContext, useState } from "react"
+import React, { createContext, useContext, useState, useEffect } from "react"
 
 export type Language = "en" | "vi"
 
@@ -450,13 +450,23 @@ type LanguageContextType = {
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined)
 
 function getInitialLanguage(): Language {
+  // Always return 'en' during SSR to match the server
   if (typeof window === "undefined") return "en"
-  const stored = localStorage.getItem("app-language") as Language
-  return stored === "en" || stored === "vi" ? stored : "en"
+  // Return 'en' on the first client render too, then we update it in an effect
+  return "en"
 }
 
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const [language, setLanguageState] = useState<Language>(getInitialLanguage)
+  const [isMounted, setIsMounted] = useState(false)
+
+  useEffect(() => {
+    const stored = localStorage.getItem("app-language") as Language
+    if (stored === "en" || stored === "vi") {
+      setLanguageState(stored)
+    }
+    setIsMounted(true)
+  }, [])
 
   const setLanguage = (lang: Language) => {
     setLanguageState(lang)
@@ -466,7 +476,9 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   }
 
   const t = (key: keyof typeof translations.en): string => {
-    const dict = translations[language] || translations.en
+    // To avoid hydration mismatch, always use English until mounted
+    const currentLang = isMounted ? language : "en"
+    const dict = translations[currentLang] || translations.en
     return dict[key] || translations.en[key] || String(key)
   }
 

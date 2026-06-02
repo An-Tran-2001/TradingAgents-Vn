@@ -15,7 +15,7 @@ class ChatSessionRepository(BaseRepository[ChatSession]):
     async def get_with_messages(self, session_id: int) -> Optional[ChatSession]:
         result = await self.db.execute(
             select(ChatSession)
-            .options(selectinload(ChatSession.messages))
+            .options(selectinload(ChatSession.messages).selectinload(ChatMessage.report))
             .where(ChatSession.id == session_id)
         )
         return result.scalar_one_or_none()
