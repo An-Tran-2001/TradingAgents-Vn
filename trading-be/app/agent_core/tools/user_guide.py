@@ -7,7 +7,10 @@ logger = logging.getLogger(__name__)
 @tool
 def get_user_guide() -> str:
     """
-    Use this tool when the user asks for the user guide, manual, instructions, or documentation for the TradingAgents system.
+    Retrieves the official documentation and system manual for the TradingAgents framework.
+    Use cases:
+    - "How do I use this system?" -> get_user_guide()
+    - "What are the capabilities of the agents?" -> get_user_guide()
     """
     try:
         # Locate the README.md from the root directory

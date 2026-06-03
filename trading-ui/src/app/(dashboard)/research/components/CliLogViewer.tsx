@@ -12,9 +12,13 @@ import {
   Scale, 
   ShieldAlert, 
   Briefcase, 
-  Clock 
+  Clock,
+  Maximize2,
+  Minimize2
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 
 // Mock Log Data with precise animation steps
 const cliLogsData = [
@@ -39,6 +43,8 @@ interface CliLogViewerProps {
   activeLogTab: "All" | "Fundamentals Analyst" | "Sentiment Analyst" | "News Analyst" | "Technical Analyst" | "Bull Researcher" | "Bear Researcher" | "Research Manager" | "Risk Management" | "Portfolio Manager" | "Trader" | string
   setActiveLogTab: (tab: "All" | "Fundamentals Analyst" | "Sentiment Analyst" | "News Analyst" | "Technical Analyst" | "Bull Researcher" | "Bear Researcher" | "Research Manager" | "Risk Management" | "Portfolio Manager" | "Trader" | string) => void
   isTyping: boolean
+  isExpanded?: boolean
+  onToggleExpand?: () => void
 }
 
 export const CliLogViewer: React.FC<CliLogViewerProps> = ({
@@ -47,6 +53,8 @@ export const CliLogViewer: React.FC<CliLogViewerProps> = ({
   activeLogTab,
   setActiveLogTab,
   isTyping,
+  isExpanded = false,
+  onToggleExpand,
 }) => {
   const { t } = useLanguage()
   const logScrollRef = useRef<HTMLDivElement>(null)
@@ -62,7 +70,7 @@ export const CliLogViewer: React.FC<CliLogViewerProps> = ({
   }, [logAnimationStep, activeLogTab, isTyping])
 
   return (
-    <div className="flex-1 flex flex-col rounded-2xl border border-primary/30 bg-[#0a0a0f] text-green-500 overflow-hidden font-mono text-sm shadow-[0_0_50px_rgba(0,240,255,0.15)]">
+    <div className={`flex flex-col rounded-2xl border border-primary/30 bg-[#0a0a0f] text-green-500 overflow-hidden font-mono text-sm shadow-[0_0_50px_rgba(0,240,255,0.15)] transition-all duration-500 ease-in-out ${isExpanded ? 'h-full absolute inset-0 z-50 m-4' : 'flex-1'}`}>
       
       {/* 2 Columns: Progress Tree & Logs */}
       <div className="flex-1 flex overflow-hidden">
@@ -198,6 +206,16 @@ export const CliLogViewer: React.FC<CliLogViewerProps> = ({
                     <Badge variant="outline" className="text-[10px] bg-muted/10 text-muted-foreground border-border/30">wait</Badge>
                   )}
                 </div>
+                <div className={`flex items-center justify-between transition-opacity duration-300 ${logAnimationStep >= 10 ? "opacity-100" : "opacity-40"}`}>
+                  <span className="text-foreground flex items-center gap-1.5"><Activity className="w-3.5 h-3.5 text-primary"/> Synthesis</span>
+                  {logAnimationStep >= 12 ? (
+                    <Badge variant="outline" className="text-[10px] bg-green-500/10 text-green-500 border-green-500/30">done</Badge>
+                  ) : logAnimationStep >= 11 ? (
+                    <Badge variant="outline" className="text-[10px] bg-cyan-500/10 text-cyan-500 border-cyan-500/30 animate-pulse">active</Badge>
+                  ) : (
+                    <Badge variant="outline" className="text-[10px] bg-muted/10 text-muted-foreground border-border/30">wait</Badge>
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -205,13 +223,24 @@ export const CliLogViewer: React.FC<CliLogViewerProps> = ({
 
         {/* Right Column: Messages & Tools */}
         <div className="flex-1 flex flex-col min-w-0">
-          <div className="py-2 text-center border-b border-primary/20 text-xs font-bold tracking-widest text-primary bg-primary/5">
-            {t("research.cli").toUpperCase()}
+          <div className="py-2 px-4 border-b border-primary/20 bg-primary/5 flex items-center justify-between">
+            <div className="text-xs font-bold tracking-widest text-primary flex-1 text-center">
+              {t("research.cli").toUpperCase()}
+            </div>
+            {onToggleExpand && (
+              <button 
+                onClick={onToggleExpand}
+                className="text-primary hover:text-cyan-300 transition-colors rounded cursor-pointer"
+                title={isExpanded ? "Collapse" : "Expand"}
+              >
+                {isExpanded ? <Minimize2 className="w-3 h-3" /> : <Maximize2 className="w-3 h-3" />}
+              </button>
+            )}
           </div>
           
           {/* Sub-Tabs for Agents */}
           <div className="flex border-b border-primary/20 overflow-x-auto custom-scrollbar flex-shrink-0">
-            {(["All", "Fundamentals Analyst", "Sentiment Analyst", "News Analyst", "Technical Analyst", "Bull Researcher", "Bear Researcher", "Research Manager", "Risk Management", "Portfolio Manager", "Trader"] as const).map(tab => (
+            {(["All", "Fundamentals Analyst", "Sentiment Analyst", "News Analyst", "Technical Analyst", "Bull Researcher", "Bear Researcher", "Research Manager", "Risk Management", "Portfolio Manager", "Trader", "System"] as const).map(tab => (
               <button 
                 key={tab}
                 onClick={() => setActiveLogTab(tab)}
@@ -227,14 +256,14 @@ export const CliLogViewer: React.FC<CliLogViewerProps> = ({
           </div>
 
           {/* Log Table Area */}
-          <div className="flex-1 overflow-y-auto p-4 bg-black/60 relative custom-scrollbar">
+          <div className="flex-1 overflow-y-auto px-2 bg-black/60 relative custom-scrollbar">
             <table className="w-full text-xs text-left table-fixed">
               <thead className="text-muted-foreground sticky top-0 bg-[#0a0a0f] z-10 shadow-[0_10px_10px_-10px_rgba(0,0,0,0.5)]">
                 <tr>
-                  <th className="pb-3 w-[80px] font-normal hidden sm:table-cell">Time</th>
-                  <th className="pb-3 w-[120px] font-normal">Agent</th>
-                  <th className="pb-3 w-[70px] font-normal hidden md:table-cell">Type</th>
-                  <th className="font-normal">Content</th>
+                  <th className="py-2 w-[80px] font-normal hidden sm:table-cell">Time</th>
+                  <th className="py-2 w-[120px] font-normal">Agent</th>
+                  <th className="py-2 w-[70px] font-normal hidden md:table-cell">Type</th>
+                  <th className="py-2 font-normal">Content</th>
                 </tr>
               </thead>
               <tbody className="align-top">
@@ -246,15 +275,29 @@ export const CliLogViewer: React.FC<CliLogViewerProps> = ({
                       <span className="text-pink-500 bg-pink-500/10 px-1.5 py-0.5 rounded">{log.type}</span>
                     </td>
                     <td className="py-3 text-green-400 break-words whitespace-normal pr-2">
-                      {log.content.includes("**Reasoning**") ? (
-                        <span><span className="text-yellow-400 font-bold">Reasoning:</span> {log.content.replace("**Reasoning**: ", "")}</span>
-                      ) : log.content.includes("**Action**") ? (
-                        <span><span className="text-primary font-bold">Action:</span> {log.content.replace("**Action**: ", "")}</span>
-                      ) : log.content.includes("**Synthesis**") ? (
-                        <span><span className="text-purple-400 font-bold">Synthesis:</span> {log.content.replace("**Synthesis**: ", "")}</span>
-                      ) : (
-                        log.content
-                      )}
+                      <div className="markdown-terminal text-green-400 [&_p]:mb-2 [&_p:last-child]:mb-0 [&_ul]:list-disc [&_ul]:ml-4 [&_ul]:mb-2 [&_ol]:list-decimal [&_ol]:ml-4 [&_ol]:mb-2 [&_h1]:text-lg [&_h1]:font-bold [&_h2]:font-bold [&_h3]:font-bold [&_code]:bg-black/50 [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded [&_pre]:bg-black/50 [&_pre]:p-2 [&_pre]:rounded [&_pre]:mb-2 [&_a]:text-cyan-400 [&_blockquote]:border-l-2 [&_blockquote]:border-green-600 [&_blockquote]:pl-2 [&_blockquote]:text-green-500 [&_table]:w-full [&_table]:my-2 [&_th]:border [&_th]:border-primary/20 [&_th]:p-1 [&_th]:bg-primary/10 [&_td]:border [&_td]:border-primary/20 [&_td]:p-1">
+                        <ReactMarkdown 
+                          remarkPlugins={[remarkGfm]}
+                          components={{
+                            strong: ({node, ...props}) => {
+                              // We stringify the children to check content, but render the original children
+                              let textContent = "";
+                              if (Array.isArray(props.children)) {
+                                textContent = props.children.map(c => c?.toString() || "").join("");
+                              } else if (typeof props.children === 'string') {
+                                textContent = props.children;
+                              }
+                              
+                              if (textContent.includes("Reasoning")) return <strong className="text-yellow-400 font-bold">{props.children}</strong>
+                              if (textContent.includes("Action")) return <strong className="text-primary font-bold">{props.children}</strong>
+                              if (textContent.includes("Synthesis")) return <strong className="text-purple-400 font-bold">{props.children}</strong>
+                              return <strong className="text-green-300 font-bold">{props.children}</strong>
+                            }
+                          }}
+                        >
+                          {log.content}
+                        </ReactMarkdown>
+                      </div>
                     </td>
                   </tr>
                 ))}

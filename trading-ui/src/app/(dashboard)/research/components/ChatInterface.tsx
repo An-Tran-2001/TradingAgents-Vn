@@ -17,6 +17,153 @@ import {
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Message } from "./types"
+import { motion, AnimatePresence } from "framer-motion"
+
+const useSmoothText = (text: string) => {
+  const [displayedText, setDisplayedText] = useState(text);
+  const textRef = useRef(text);
+  const displayedRef = useRef(displayedText);
+
+  // Keep target text updated without restarting the effect
+  useEffect(() => {
+    textRef.current = text;
+  }, [text]);
+
+  useEffect(() => {
+    let animationFrameId: number;
+    let lastTime = performance.now();
+    const FRAME_MS = 1000 / 40; // ~40 FPS
+
+    const updateText = (time: number) => {
+      if (time - lastTime >= FRAME_MS) {
+        setDisplayedText((current) => {
+          const target = textRef.current;
+          
+          // Snap immediately if target is completely different or shrunk
+          if (target.length < current.length) {
+            displayedRef.current = target;
+            return target;
+          }
+          
+          // Snap if it's a huge initial load
+          if (current.length === 0 && target.length > 500) {
+            displayedRef.current = target;
+            return target;
+          }
+          
+          if (current.length >= target.length) {
+            return current;
+          }
+          
+          const remaining = target.length - current.length;
+          // Capped acceleration to keep the typing effect even on large chunks
+          const step = Math.min(10, Math.max(1, Math.ceil(remaining / 8))); 
+          const next = target.slice(0, current.length + step);
+          displayedRef.current = next;
+          return next;
+        });
+        lastTime = time;
+      }
+      animationFrameId = requestAnimationFrame(updateText);
+    };
+
+    animationFrameId = requestAnimationFrame(updateText);
+    return () => cancelAnimationFrame(animationFrameId);
+  }, []); // Run only once
+
+  return displayedText;
+};
+
+const MessageBubble = React.memo(({ msg }: { msg: Message }) => {
+  const rawContent = typeof msg.content === 'string' ? msg.content : "";
+  const smoothedContent = useSmoothText(rawContent);
+  
+  let contentStr = typeof msg.content === 'string' ? smoothedContent : "";
+  if (typeof msg.content === 'string') {
+    const codeBlockCount = (contentStr.match(/```/g) || []).length;
+    if (codeBlockCount % 2 !== 0) {
+      contentStr += '\n```';
+    }
+  }
+
+  return (
+    <div 
+      className={`flex gap-4 ${msg.role === "user" ? "flex-row-reverse" : "flex-row"} animate-in fade-in slide-in-from-bottom-2 duration-300`}
+    >
+      {/* Avatar */}
+      <div className={`mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
+        msg.role === "user" 
+          ? "bg-muted text-muted-foreground" 
+          : "bg-primary text-primary-foreground shadow-[0_0_15px_rgba(var(--primary),0.4)]"
+      }`}>
+        {msg.role === "user" ? <User className="h-4 w-4" /> : <Activity className="h-4 w-4" />}
+      </div>
+
+      {/* Message Bubble */}
+      <div className={`flex flex-col gap-1.5 ${msg.role === "user" ? "items-end" : "items-start"} w-full max-w-[85%]`}>
+        <div className="flex items-center gap-2 px-1">
+          <span className="text-sm font-semibold">
+            {msg.role === "user" ? "You" : msg.agentRole}
+          </span>
+        </div>
+        <div 
+          className={`text-[15px] leading-relaxed w-full prose prose-sm dark:prose-invert max-w-none ${
+            msg.role === "user"
+              ? "bg-muted/50 px-5 py-3.5 rounded-2xl rounded-tr-sm inline-block w-auto"
+              : "bg-card/40 backdrop-blur-sm border border-border/50 px-6 py-5 rounded-2xl rounded-tl-sm shadow-sm"
+          }`}
+        >
+          {typeof msg.content === 'string' ? (
+            <ReactMarkdown 
+              remarkPlugins={[remarkGfm]}
+              components={{
+                table: ({node, ...props}) => (
+                  <div className="overflow-x-auto my-4 rounded-lg border border-border/50">
+                    <table className="w-full text-sm text-left" {...props} />
+                  </div>
+                ),
+                thead: ({node, ...props}) => <thead className="bg-muted/50 text-xs uppercase" {...props} />,
+                th: ({node, ...props}) => <th className="px-4 py-3 font-medium text-foreground" {...props} />,
+                td: ({node, ...props}) => <td className="px-4 py-3 border-t border-border/50 text-muted-foreground" {...props} />,
+                a: ({node, href, children, ...props}) => {
+                  if (href?.startsWith('citation:')) {
+                    return (
+                      <div className="my-3 block">
+                        <a href={href} className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-all no-underline cursor-pointer group shadow-sm" {...props}>
+                          <BookOpen className="h-4 w-4 group-hover:scale-110 transition-transform" />
+                          <span className="font-medium text-sm">{children}</span>
+                        </a>
+                      </div>
+                    );
+                  }
+                  return <a href={href} className="text-primary hover:underline font-medium" {...props}>{children}</a>;
+                },
+                pre: ({node, ...props}) => (
+                  <div className="my-4 rounded-lg overflow-hidden border border-border/50 bg-background/50 shadow-sm">
+                    <pre className="p-4 overflow-x-auto text-sm" {...props} />
+                  </div>
+                ),
+                code: ({node, className, children, ...props}) => {
+                  return (
+                    <code className={`${className || ''} bg-muted/50 text-primary px-1.5 py-0.5 rounded text-[13px] font-mono`} {...props}>
+                      {children}
+                    </code>
+                  )
+                }
+              }}
+            >
+              {contentStr}
+            </ReactMarkdown>
+          ) : (
+            msg.content
+          )}
+        </div>
+        <span className="text-xs text-muted-foreground px-1">{msg.timestamp}</span>
+      </div>
+    </div>
+  );
+});
+MessageBubble.displayName = 'MessageBubble';
 
 interface ChatInterfaceProps {
   messages: Message[]
@@ -37,12 +184,47 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const [inputValue, setInputValue] = useState("")
   const chatScrollRef = useRef<HTMLDivElement>(null)
 
-  // Auto-scroll chat
+  const [isAutoScrollEnabled, setIsAutoScrollEnabled] = useState(true)
+
+  // Track if user manually scrolls up
+  const handleScroll = () => {
+    if (!chatScrollRef.current) return;
+    const { scrollTop, scrollHeight, clientHeight } = chatScrollRef.current;
+    const isNearBottom = scrollHeight - scrollTop - clientHeight < 150;
+    setIsAutoScrollEnabled(isNearBottom);
+  };
+
+  // Robust Auto-scroll chat using MutationObserver to catch all text additions
   useEffect(() => {
-    if (chatScrollRef.current && !isTyping) {
-      chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight
+    const scrollEl = chatScrollRef.current;
+    if (!scrollEl) return;
+
+    const scrollToBottomIfNear = () => {
+      if (isAutoScrollEnabled) {
+        scrollEl.scrollTop = scrollEl.scrollHeight;
+      }
+    };
+
+    // Observe all DOM mutations in the chat container
+    const observer = new MutationObserver(() => {
+      scrollToBottomIfNear();
+    });
+
+    const innerContainer = scrollEl.firstElementChild;
+    if (innerContainer) {
+      observer.observe(innerContainer, { childList: true, subtree: true, characterData: true });
     }
-  }, [messages, isTyping])
+
+    return () => observer.disconnect();
+  }, [isAutoScrollEnabled]);
+
+  // Force scroll to bottom when a brand new message arrives
+  useEffect(() => {
+    if (chatScrollRef.current) {
+      chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
+      setIsAutoScrollEnabled(true); // Re-enable auto scroll on new message
+    }
+  }, [messages.length]);
 
   const handleSend = () => {
     if (!inputValue.trim()) return
@@ -82,7 +264,8 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
       {/* Chat Messages */}
       <div 
         ref={chatScrollRef}
-        className="flex-1 overflow-y-auto p-4 sm:p-6 scroll-smooth custom-scrollbar"
+        onScroll={handleScroll}
+        className="flex-1 overflow-y-auto p-4 sm:p-6 custom-scrollbar"
       >
         <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 pb-32">
           
@@ -131,84 +314,22 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
               </div>
             </div>
           ) : (
-            messages.map((msg) => (
-              <div key={msg.id} className={`flex gap-4 ${msg.role === "user" ? "flex-row-reverse" : "flex-row"} animate-in fade-in slide-in-from-bottom-2`}>
-                
-                {/* Avatar */}
-                <div className={`mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
-                  msg.role === "user" 
-                    ? "bg-muted text-muted-foreground" 
-                    : "bg-primary text-primary-foreground shadow-[0_0_15px_rgba(var(--primary),0.4)]"
-                }`}>
-                  {msg.role === "user" ? <User className="h-4 w-4" /> : <Activity className="h-4 w-4" />}
-                </div>
-
-                {/* Message Bubble */}
-                <div className={`flex flex-col gap-1.5 ${msg.role === "user" ? "items-end" : "items-start"} w-full max-w-[85%]`}>
-                  <div className="flex items-center gap-2 px-1">
-                    <span className="text-sm font-semibold">
-                      {msg.role === "user" ? "You" : msg.agentRole}
-                    </span>
-                  </div>
-                  <div className={`text-[15px] leading-relaxed w-full prose prose-sm dark:prose-invert max-w-none ${
-                    msg.role === "user"
-                      ? "bg-muted/50 px-5 py-3.5 rounded-2xl rounded-tr-sm inline-block w-auto"
-                      : "bg-card/40 backdrop-blur-sm border border-border/50 px-6 py-5 rounded-2xl rounded-tl-sm shadow-sm"
-                  }`}>
-                    {typeof msg.content === 'string' ? (
-                      <ReactMarkdown 
-                        remarkPlugins={[remarkGfm]}
-                        components={{
-                          table: ({node, ...props}) => (
-                            <div className="overflow-x-auto my-4 rounded-lg border border-border/50">
-                              <table className="w-full text-sm text-left" {...props} />
-                            </div>
-                          ),
-                          thead: ({node, ...props}) => <thead className="bg-muted/50 text-xs uppercase" {...props} />,
-                          th: ({node, ...props}) => <th className="px-4 py-3 font-medium text-foreground" {...props} />,
-                          td: ({node, ...props}) => <td className="px-4 py-3 border-t border-border/50 text-muted-foreground" {...props} />,
-                          a: ({node, href, children, ...props}) => {
-                            if (href?.startsWith('citation:')) {
-                              return (
-                                <div className="my-3 block">
-                                  <a href={href} className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-all no-underline cursor-pointer group shadow-sm" {...props}>
-                                    <BookOpen className="h-4 w-4 group-hover:scale-110 transition-transform" />
-                                    <span className="font-medium text-sm">{children}</span>
-                                  </a>
-                                </div>
-                              );
-                            }
-                            return <a href={href} className="text-primary hover:underline font-medium" {...props}>{children}</a>;
-                          },
-                          pre: ({node, ...props}) => (
-                            <div className="my-4 rounded-lg overflow-hidden border border-border/50 bg-background/50 shadow-sm">
-                              <pre className="p-4 overflow-x-auto text-sm" {...props} />
-                            </div>
-                          ),
-                          code: ({node, className, children, ...props}) => {
-                            return (
-                              <code className={`${className || ''} bg-muted/50 text-primary px-1.5 py-0.5 rounded text-[13px] font-mono`} {...props}>
-                                {children}
-                              </code>
-                            )
-                          }
-                        }}
-                      >
-                        {msg.content}
-                      </ReactMarkdown>
-                    ) : (
-                      msg.content
-                    )}
-                  </div>
-                  <span className="text-xs text-muted-foreground px-1">{msg.timestamp}</span>
-                </div>
-              </div>
-            ))
+            <div className="flex flex-col gap-6">
+              {messages.map((msg) => (
+                <MessageBubble key={msg.id} msg={msg} />
+              ))}
+            </div>
           )}
           
           {/* Typing Indicator */}
           {isTyping && (
-            <div className="flex gap-4 flex-row animate-in fade-in slide-in-from-bottom-2">
+            <motion.div 
+              layout
+              initial={{ opacity: 0, y: 10, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              className="flex gap-4 flex-row"
+            >
               <div className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-[0_0_15px_rgba(var(--primary),0.4)]">
                 <Activity className="h-4 w-4" />
               </div>
@@ -224,7 +345,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                   </div>
                 </div>
               </div>
-            </div>
+            </motion.div>
           )}
         </div>
       </div>

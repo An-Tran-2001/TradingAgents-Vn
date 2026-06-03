@@ -19,6 +19,9 @@ class Report(Base):
     
     # Financial fields (Nullable until completed)
     current_price = Column(Float, nullable=True)
+    change = Column(Float, nullable=True) # Percent change today or from entry
+    agents_count = Column(Integer, nullable=True)
+    duration = Column(String, nullable=True) # e.g. "45s", "1m 12s"
     recommendation = Column(String, nullable=True) # BUY, HOLD, SELL
     confidence = Column(Integer, nullable=True) # 0-100
     target_price = Column(Float, nullable=True)

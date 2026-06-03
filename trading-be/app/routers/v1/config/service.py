@@ -243,27 +243,33 @@ _API_KEY_MAPPING = {
     "azure": ["AZURE_OPENAI_API_KEY"],
 }
 
-def _check_provider_ready(provider_id: str, requires_api_key: bool) -> bool:
+def _check_provider_ready(provider_id: str, requires_api_key: bool, user_api_keys: dict = None) -> bool:
     if not requires_api_key:
         return True
+        
+    if user_api_keys and provider_id in user_api_keys and user_api_keys[provider_id]:
+        return True
+        
     env_vars = _API_KEY_MAPPING.get(provider_id, [])
     return any(bool(os.getenv(env_var)) for env_var in env_vars)
 
 class ConfigService:
-    def list_providers(self) -> List[ProviderInfo]:
+    def list_providers(self, user_api_keys: dict = None) -> List[ProviderInfo]:
+        user_api_keys = user_api_keys or {}
         return [
             ProviderInfo(
                 id=p["id"],
                 name=p["name"],
                 base_url=p.get("base_url"),
                 requires_api_key=p["requires_api_key"],
-                is_ready=_check_provider_ready(p["id"], p["requires_api_key"]),
+                is_ready=_check_provider_ready(p["id"], p["requires_api_key"], user_api_keys),
                 regions=p.get("regions"),
             )
             for p in _PROVIDERS
         ]
 
-    def get_provider_models(self, provider_id: str) -> ProviderDetailResponse:
+    def get_provider_models(self, provider_id: str, user_api_keys: dict = None) -> ProviderDetailResponse:
+        user_api_keys = user_api_keys or {}
         provider_data = next((p for p in _PROVIDERS if p["id"] == provider_id.lower()), None)
         if not provider_data:
             raise HTTPException(status_code=404, detail=f"Provider '{provider_id}' is not supported.")
@@ -273,7 +279,7 @@ class ConfigService:
             name=provider_data["name"],
             base_url=provider_data.get("base_url"),
             requires_api_key=provider_data["requires_api_key"],
-            is_ready=_check_provider_ready(provider_data["id"], provider_data["requires_api_key"]),
+            is_ready=_check_provider_ready(provider_data["id"], provider_data["requires_api_key"], user_api_keys),
             regions=provider_data.get("regions"),
         )
 

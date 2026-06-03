@@ -8,6 +8,7 @@ from app.routers.v1.agent_chats.repositories.chat import (
     ChatSessionRepository,
     ChatMessageRepository,
 )
+from app.routers.v1.agent_reports.models.relational import ReportAgentOutput, ReportForecast
 from app.routers.v1.agent_reports.repositories.report import ReportRepository
 from app.routers.v1.users.repositories.setting import SettingRepository
 from app.agent_core.agents.orchestrator import OrchestratorAgent
@@ -100,16 +101,31 @@ class ChatService:
             }
         )
 
-        chat_history = request_data.get("chat_history")
-        if chat_history is None:
-            db_history = await self.get_session_messages(session_id)
-            chat_history = [
-                {"role": msg.role, "content": msg.content} for msg in db_history
-            ]
+        # Prioritize DB history to ensure we get the full JSON state and report_ids
+        db_history = await self.get_session_messages(session_id)
+        chat_history = []
+        
+        # db_history includes the newly added user message, so we check if there are past messages (> 1)
+        if db_history and len(db_history) > 1:
+            for msg in db_history:
+                content = msg.content
+                if content.startswith('{"type": "final_report"'):
+                    try:
+                        parsed = json.loads(content)
+                        report_id = parsed.get("report_id")
+                        if report_id:
+                            content = f"[System: Generated financial research report. Report ID: {report_id}. Use the 'query_past_report' tool with this ID if the user asks questions about this report.]"
+                    except Exception as e:
+                        logger.error(f"Failed to parse final_report for chat_history: {e}")
+                chat_history.append({"role": msg.role, "content": content})
+            
             # Exclude the just-added user message which is already at the end
             chat_history = chat_history[:-1]
+        else:
+            # Fallback to frontend's history if DB has no past messages
+            chat_history = request_data.get("chat_history", [])
 
-        provider = request_data.get("llm_provider", "openai")
+        provider = request_data.get("llm_provider", "openai").lower()
         base_model = request_data.get("model", "gpt-4o")
         quick_model = request_data.get("quick_think_model") or base_model
         language = normalize_language(
@@ -118,13 +134,36 @@ class ChatService:
 
         user_settings = await self.setting_repo.get_by_user_id(user_id)
         api_key = None
+        api_keys = {}
         if user_settings and user_settings.api_keys:
+            # Clean all keys to prevent newline issues
+            for k, v in user_settings.api_keys.items():
+                if isinstance(v, str):
+                    api_keys[k] = v.strip()
+                    
             # The UI saves the key either directly under the provider or as {provider}_API_KEY depending on the config logic
-            api_key = user_settings.api_keys.get(provider)
+            api_key = api_keys.get(provider)
+
+        # Build advanced kwargs for OrchestratorAgent
+        orchestrator_kwargs = {}
+        if request_data.get("temperature") is not None:
+            orchestrator_kwargs["temperature"] = request_data["temperature"]
+        if request_data.get("top_p") is not None:
+            orchestrator_kwargs["top_p"] = request_data["top_p"]
+        if request_data.get("top_k") is not None:
+            orchestrator_kwargs["top_k"] = request_data["top_k"]
+        if request_data.get("max_tokens") is not None:
+            orchestrator_kwargs["max_tokens"] = request_data["max_tokens"]
+        if request_data.get("max_retries") is not None:
+            orchestrator_kwargs["max_retries"] = request_data["max_retries"]
 
         try:
             orchestrator = OrchestratorAgent(
-                provider=provider, model=quick_model, language=language, api_key=api_key
+                provider=provider, 
+                model=quick_model, 
+                language=language, 
+                api_key=api_key,
+                **orchestrator_kwargs
             )
         except Exception as e:
             yield f"data: {json.dumps({'type': 'error', 'content': f'Agent Initialization Failed: {e}'})}\n\n"
@@ -198,21 +237,74 @@ class ChatService:
                         final_state = res_event.get("final_state")
 
                 if final_state:
+                    # Inject model configuration so the UI can display what was actually used
+                    final_state["used_models"] = {
+                        "provider": request_data.get("llm_provider", "openai"),
+                        "model": request_data.get("model"),
+                        "quick_think_model": request_data.get("quick_think_model"),
+                        "deep_think_model": request_data.get("deep_think_model"),
+                    }
                     final_text = json.dumps(
-                        {"type": "final_report", "state": final_state},
+                        {"type": "final_report", "report_id": report.id, "state": final_state},
                         ensure_ascii=False,
                     )
                     try:
                         await self.chat_message_repo.update(
                             db_obj=assistant_msg, obj_in={"content": final_text}
                         )
+                        
+                        update_data = {
+                            "status": "completed",
+                            "summary": final_state.get("investment_plan", ""),
+                        }
+                        
+                        structured_report = final_state.get("structured_report")
+                        if structured_report:
+                            update_data.update({
+                                "change": structured_report.get("change"),
+                                "agents_count": structured_report.get("agents_count"),
+                                "current_price": structured_report.get("current_price"),
+                                "target_price": structured_report.get("target_price"),
+                                "stop_loss": structured_report.get("stop_loss"),
+                                "risk_reward": structured_report.get("risk_reward"),
+                                "recommendation": structured_report.get("recommendation"),
+                                "confidence": structured_report.get("confidence"),
+                                "summary": structured_report.get("summary", update_data["summary"]),
+                                "bull_points": structured_report.get("bull_points", []),
+                                "bear_points": structured_report.get("bear_points", [])
+                            })
+                            
                         await self.report_repo.update(
                             db_obj=report,
-                            obj_in={
-                                "status": "completed",
-                                "summary": final_state.get("investment_plan", ""),
-                            },
+                            obj_in=update_data,
                         )
+                        
+                        if structured_report:
+                            # Insert agent outputs
+                            for out in structured_report.get("agent_outputs", []):
+                                new_out = ReportAgentOutput(
+                                    report_id=report.id,
+                                    team_name=out.get("team", ""),
+                                    agent_name=out.get("agent", ""),
+                                    recommendation=out.get("recommendation", ""),
+                                    confidence=out.get("confidence", 0),
+                                    summary=out.get("summary", "")
+                                )
+                                self.report_repo.db.add(new_out)
+                            
+                            for f in structured_report.get("forecasts", []):
+                                new_f = ReportForecast(
+                                    report_id=report.id,
+                                    day_offset=f.get("day", ""),
+                                    price_low=f.get("low", 0.0),
+                                    price_high=f.get("high", 0.0),
+                                    price_target=f.get("price", 0.0),
+                                    signal=f.get("signal", "")
+                                )
+                                self.report_repo.db.add(new_f)
+                                
+                            await self.report_repo.db.commit()
+                            
                     except Exception as e:
                         logger.error(f"Failed to update Report and Message in DB: {e}")
 

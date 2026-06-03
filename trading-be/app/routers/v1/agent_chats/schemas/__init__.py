@@ -46,3 +46,8 @@ class ChatRequest(BaseModel):
     output_language: Optional[str] = "en"
     language: Optional[str] = None
     active_teams: Optional[List[str]] = Field(default_factory=lambda: ["Fundamentals", "Sentiment", "News", "Technical"])
+    temperature: Optional[float] = None
+    top_p: Optional[float] = None
+    top_k: Optional[int] = None
+    max_tokens: Optional[int] = None
+    max_retries: Optional[int] = None

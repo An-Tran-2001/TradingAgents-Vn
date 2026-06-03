@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useCallback } from "react"
 import { useLanguage } from "@/contexts/language-context"
 import Cookies from "js-cookie"
 import {
@@ -49,6 +49,8 @@ export default function AgentsResearchPage() {
   // Cyberpunk Workflow State
   const [isTyping, setIsTyping] = useState(false)
   const [isResearching, setIsResearching] = useState(false)
+  const [isViewingLogs, setIsViewingLogs] = useState(false)
+  const [isCliExpanded, setIsCliExpanded] = useState(false)
   const [logAnimationStep, setLogAnimationStep] = useState(0)
   const [activeLogTab, setActiveLogTab] = useState<string>("All")
   
@@ -56,12 +58,14 @@ export default function AgentsResearchPage() {
   const [isHistoryOpen, setIsHistoryOpen] = useState(false)
   const [refreshSidebarTrigger, setRefreshSidebarTrigger] = useState(0)
 
-  const handleSelectSession = async (selectedSessionId: number) => {
+  const handleSelectSession = useCallback(async (selectedSessionId: number) => {
     try {
       setIsHistoryOpen(false);
       setSessionId(selectedSessionId);
       setIsTyping(false);
       setIsResearching(false);
+      setIsViewingLogs(false);
+      setIsCliExpanded(false);
       setLogs([]);
       setLogAnimationStep(0);
       
@@ -84,7 +88,21 @@ export default function AgentsResearchPage() {
                   <FinalReport 
                     ticker={sessionData.ticker || "Asset"} 
                     finalState={parsed.state} 
-                    onReplay={replayWorkflow} 
+                    onReplay={replayWorkflow}
+                    onViewLogs={() => {
+                      if (parsed.logs && parsed.logs.length > 0) {
+                        setLogs(parsed.logs.map((log: any) => ({
+                          step: log.step,
+                          time: log.time,
+                          agent: log.agent,
+                          type: log.log_type,
+                          content: log.content
+                        })));
+                        setLogAnimationStep(12);
+                      }
+                      setIsViewingLogs(true);
+                      setIsCliExpanded(true);
+                    }}
                   />
                 </div>
               );
@@ -124,20 +142,22 @@ export default function AgentsResearchPage() {
     } catch (e) {
       console.error("Failed to load session details", e);
     }
-  }
+  }, []);
 
 
 
-  const handleNewChat = () => {
+  const handleNewChat = useCallback(() => {
     setSessionId(null);
     setMessages([]);
     setTicker("");
     setIsTyping(false);
     setIsResearching(false);
+    setIsViewingLogs(false);
+    setIsCliExpanded(false);
     setLogs([]);
     setLogAnimationStep(0);
     setIsHistoryOpen(false);
-  }
+  }, []);
 
   // No mock timer needed anymore
 
@@ -157,6 +177,8 @@ export default function AgentsResearchPage() {
     setMessages((prev) => [...prev, newMsg])
     setIsTyping(true)
     setIsResearching(false)
+    setIsViewingLogs(false)
+    setIsCliExpanded(false)
     setLogs([])
     setLogAnimationStep(0)
     
@@ -190,7 +212,12 @@ export default function AgentsResearchPage() {
             deep_think_model: parsed.useAdvancedModels ? (parsed.selectedDeepModel || parsed.selectedModel) : undefined,
             depth: parsed.depth || "medium",
             reasoning_effort: parsed.effort || "high",
-            active_teams: active_teams.length > 0 ? active_teams : ["Fundamentals", "Sentiment", "News", "Technical"]
+            active_teams: active_teams.length > 0 ? active_teams : ["Fundamentals", "Sentiment", "News", "Technical"],
+            temperature: parsed.temperature !== undefined ? Number(parsed.temperature) : undefined,
+            top_p: parsed.topP !== undefined ? Number(parsed.topP) : undefined,
+            top_k: parsed.topK !== undefined ? Number(parsed.topK) : undefined,
+            max_tokens: parsed.maxTokens !== undefined ? Number(parsed.maxTokens) : undefined,
+            max_retries: parsed.maxRetries !== undefined ? Number(parsed.maxRetries) : undefined,
           };
         }
       } catch (e) {
@@ -292,6 +319,18 @@ export default function AgentsResearchPage() {
                 if (step) {
                   setLogAnimationStep(prev => Math.max(prev, step));
                 }
+              } else if (data.type === "agent_log_chunk") {
+                setLogs(prev => {
+                  const newLogs = [...prev];
+                  const lastLog = newLogs[newLogs.length - 1];
+                  if (lastLog && lastLog.agent === data.agent) {
+                    newLogs[newLogs.length - 1] = {
+                      ...lastLog,
+                      content: lastLog.content + data.content
+                    };
+                  }
+                  return newLogs;
+                });
               } else if (data.type === "pipeline_complete") {
                 finalState = data.final_state;
                 setLogAnimationStep(12); // Finish pipeline visually
@@ -333,7 +372,11 @@ export default function AgentsResearchPage() {
                       <FinalReport 
                         ticker={activeTicker || "Asset"} 
                         finalState={finalState} 
-                        onReplay={replayWorkflow} 
+                        onReplay={replayWorkflow}
+                        onViewLogs={() => {
+                          setIsViewingLogs(true);
+                          setIsCliExpanded(true);
+                        }}
                       />
                     </div>
                   )
@@ -350,7 +393,11 @@ export default function AgentsResearchPage() {
                     <FinalReport 
                       ticker={activeTicker || "Asset"} 
                       finalState={finalState} 
-                      onReplay={replayWorkflow} 
+                      onReplay={replayWorkflow}
+                      onViewLogs={() => {
+                        setIsViewingLogs(true);
+                        setIsCliExpanded(true);
+                      }}
                     />
                   ),
                   timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
@@ -388,10 +435,21 @@ export default function AgentsResearchPage() {
       
       {/* Main Chat Area (Left/Center) */}
       <div className="flex flex-1 flex-col overflow-hidden relative z-10">
-        {isResearching ? (
+        {(isResearching || isViewingLogs) ? (
           <div className="flex h-full w-full flex-col p-4 sm:p-6 animate-in fade-in zoom-in-95 duration-700">
+            {isViewingLogs && !isResearching && (
+              <div className="mb-4">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setIsViewingLogs(false)}
+                  className="bg-background/50 backdrop-blur border-primary/20 hover:bg-primary/10 hover:text-primary text-muted-foreground"
+                >
+                  &larr; Back to Chat
+                </Button>
+              </div>
+            )}
             {/* TOP HALF: Fantasy Pipeline Visualization */}
-            <PipelineVisualization logAnimationStep={logAnimationStep} />
+            {!isCliExpanded && <PipelineVisualization logAnimationStep={logAnimationStep} />}
 
             {/* BOTTOM HALF: CLI-STYLE LOG VIEWER */}
             <CliLogViewer 
@@ -400,6 +458,8 @@ export default function AgentsResearchPage() {
               activeLogTab={activeLogTab}
               setActiveLogTab={setActiveLogTab}
               isTyping={isTyping}
+              isExpanded={isCliExpanded}
+              onToggleExpand={() => setIsCliExpanded(!isCliExpanded)}
             />
           </div>
         ) : (

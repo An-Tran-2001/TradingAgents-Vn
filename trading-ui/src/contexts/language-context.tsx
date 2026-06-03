@@ -175,6 +175,13 @@ const translations = {
     "research.effortLow": "Low (Heuristic)",
     "research.effortMedium": "Medium (Standard)",
     "research.effortHigh": "High (Deep Debate)",
+    "research.tabBasic": "Basic",
+    "research.tabAdvanced": "Advanced",
+    "research.temperature": "Temperature",
+    "research.topP": "Top P",
+    "research.topK": "Top K",
+    "research.maxTokens": "Max Tokens",
+    "research.maxRetries": "Max Retries",
 
     // Jobs Page
     "jobs.title": "Scheduled Trading Jobs",
@@ -392,6 +399,13 @@ const translations = {
     "research.effortLow": "Thấp (Heuristic)",
     "research.effortMedium": "Vừa (Cân bằng)",
     "research.effortHigh": "Cao (Tranh luận sâu)",
+    "research.tabBasic": "Cơ Bản",
+    "research.tabAdvanced": "Nâng Cao",
+    "research.temperature": "Nhiệt Độ (Temperature)",
+    "research.topP": "Top P",
+    "research.topK": "Top K",
+    "research.maxTokens": "Giới Hạn Token",
+    "research.maxRetries": "Số Lần Thử Lại",
 
     // Jobs Page
     "jobs.title": "Lịch Trình Phân Tích",

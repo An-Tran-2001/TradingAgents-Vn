@@ -215,6 +215,8 @@ class OpenAIClient(BaseLLMClient):
             api_key_env = get_api_key_env(self.provider)
             if api_key_env:
                 api_key = self.kwargs.get("api_key") or os.environ.get(api_key_env)
+                if isinstance(api_key, str):
+                    api_key = api_key.strip()
                 if api_key:
                     llm_kwargs["api_key"] = api_key
                 else:

@@ -40,6 +40,8 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Input } from "@/components/ui/input"
 
 type ProviderIconComponent = React.ComponentType<React.SVGProps<SVGSVGElement> & { className?: string }>
 
@@ -72,7 +74,7 @@ const ProviderBrandMark = ({ providerId }: { providerId: string }) => {
   )
 }
 
-export const SettingsPanel: React.FC = () => {
+export const SettingsPanel: React.FC = React.memo(() => {
   const { t } = useLanguage()
   
   const [selectedProvider, setSelectedProvider] = useState<string>("openai")
@@ -86,6 +88,14 @@ export const SettingsPanel: React.FC = () => {
   const [teamTechnical, setTeamTechnical] = useState<boolean>(true)
   const [depth, setDepth] = useState<string>("medium")
   const [effort, setEffort] = useState<string>("high")
+  
+  // Advanced parameters
+  const [temperature, setTemperature] = useState<number>(0.2)
+  const [topP, setTopP] = useState<number>(1.0)
+  const [topK, setTopK] = useState<number>(40)
+  const [maxTokens, setMaxTokens] = useState<number>(8000)
+  const [maxRetries, setMaxRetries] = useState<number>(3)
+  
   const [isInitialized, setIsInitialized] = useState<boolean>(false)
 
   const { providers, isLoading: providersLoading } = useProviders()
@@ -109,6 +119,11 @@ export const SettingsPanel: React.FC = () => {
         if (parsed.teamTechnical !== undefined) setTeamTechnical(parsed.teamTechnical)
         if (parsed.depth) setDepth(parsed.depth)
         if (parsed.effort) setEffort(parsed.effort)
+        if (parsed.temperature !== undefined) setTemperature(Number(parsed.temperature))
+        if (parsed.topP !== undefined) setTopP(Number(parsed.topP))
+        if (parsed.topK !== undefined) setTopK(Number(parsed.topK))
+        if (parsed.maxTokens !== undefined) setMaxTokens(Number(parsed.maxTokens))
+        if (parsed.maxRetries !== undefined) setMaxRetries(Number(parsed.maxRetries))
       } catch (e) {
         console.error("Error parsing research settings", e)
       }
@@ -131,7 +146,12 @@ export const SettingsPanel: React.FC = () => {
       teamNews,
       teamTechnical,
       depth,
-      effort
+      effort,
+      temperature,
+      topP,
+      topK,
+      maxTokens,
+      maxRetries
     }
     localStorage.setItem("trading_research_settings", JSON.stringify(settingsToSave))
   }, [
@@ -146,7 +166,12 @@ export const SettingsPanel: React.FC = () => {
     teamNews,
     teamTechnical,
     depth,
-    effort
+    effort,
+    temperature,
+    topP,
+    topK,
+    maxTokens,
+    maxRetries
   ])
 
   // Auto-select first available model when provider changes
@@ -188,9 +213,16 @@ export const SettingsPanel: React.FC = () => {
       </div>
       
       <ScrollArea className="flex-1">
-        <div className="p-5 space-y-8">
-          
-          {/* Provider + Model selectors driven by API */}
+        <div className="p-5">
+          <Tabs defaultValue="basic" className="w-full">
+            <TabsList className="grid w-full grid-cols-2 mb-6">
+              <TabsTrigger value="basic">{t("research.tabBasic")}</TabsTrigger>
+              <TabsTrigger value="advanced">{t("research.tabAdvanced")}</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="basic" className="space-y-8 mt-0">
+              
+              {/* Provider + Model selectors driven by API */}
           <div className="space-y-5">
             {/* Provider Selector */}
             <div className="space-y-3">
@@ -494,8 +526,90 @@ export const SettingsPanel: React.FC = () => {
             </div>
           </div>
           
+            </TabsContent>
+
+            <TabsContent value="advanced" className="space-y-6 mt-0">
+              <div className="space-y-5 rounded-xl border border-primary/20 bg-background/30 p-4">
+                <div className="space-y-2">
+                  <Label className="text-xs font-semibold text-muted-foreground flex items-center justify-between">
+                    <span>{t("research.temperature")}</span>
+                    <span className="text-primary">{temperature}</span>
+                  </Label>
+                  <Input 
+                    type="number" 
+                    step="0.1" min="0" max="2" 
+                    value={temperature} 
+                    onChange={(e) => setTemperature(parseFloat(e.target.value) || 0)} 
+                    className="h-9 bg-background/50"
+                  />
+                  <p className="text-[10px] text-muted-foreground/70 leading-tight">Controls randomness: Lowering results in less random completions.</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-xs font-semibold text-muted-foreground flex items-center justify-between">
+                    <span>{t("research.topP")}</span>
+                    <span className="text-primary">{topP}</span>
+                  </Label>
+                  <Input 
+                    type="number" 
+                    step="0.05" min="0" max="1" 
+                    value={topP} 
+                    onChange={(e) => setTopP(parseFloat(e.target.value) || 0)} 
+                    className="h-9 bg-background/50"
+                  />
+                  <p className="text-[10px] text-muted-foreground/70 leading-tight">Controls diversity via nucleus sampling.</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-xs font-semibold text-muted-foreground flex items-center justify-between">
+                    <span>{t("research.topK")}</span>
+                    <span className="text-primary">{topK}</span>
+                  </Label>
+                  <Input 
+                    type="number" 
+                    step="1" min="0" max="100" 
+                    value={topK} 
+                    onChange={(e) => setTopK(parseInt(e.target.value) || 0)} 
+                    className="h-9 bg-background/50"
+                  />
+                  <p className="text-[10px] text-muted-foreground/70 leading-tight">Limits vocabulary to top K tokens.</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-xs font-semibold text-muted-foreground flex items-center justify-between">
+                    <span>{t("research.maxTokens")}</span>
+                    <span className="text-primary">{maxTokens}</span>
+                  </Label>
+                  <Input 
+                    type="number" 
+                    step="100" min="100" max="128000" 
+                    value={maxTokens} 
+                    onChange={(e) => setMaxTokens(parseInt(e.target.value) || 0)} 
+                    className="h-9 bg-background/50"
+                  />
+                  <p className="text-[10px] text-muted-foreground/70 leading-tight">Maximum number of tokens to generate.</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-xs font-semibold text-muted-foreground flex items-center justify-between">
+                    <span>{t("research.maxRetries")}</span>
+                    <span className="text-primary">{maxRetries}</span>
+                  </Label>
+                  <Input 
+                    type="number" 
+                    step="1" min="0" max="10" 
+                    value={maxRetries} 
+                    onChange={(e) => setMaxRetries(parseInt(e.target.value) || 0)} 
+                    className="h-9 bg-background/50"
+                  />
+                  <p className="text-[10px] text-muted-foreground/70 leading-tight">Number of times to retry failed API calls.</p>
+                </div>
+              </div>
+            </TabsContent>
+          </Tabs>
         </div>
       </ScrollArea>
     </div>
   )
-}
+})
+SettingsPanel.displayName = 'SettingsPanel';

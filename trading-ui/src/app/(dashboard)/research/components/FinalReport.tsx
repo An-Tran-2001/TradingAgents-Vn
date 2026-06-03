@@ -12,7 +12,11 @@ import {
   MessageSquare, 
   BookOpen, 
   ShieldAlert, 
-  Gavel
+  Gavel,
+  Cpu,
+  BrainCircuit,
+  Zap,
+  Activity
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -23,9 +27,10 @@ interface FinalReportProps {
   ticker: string
   finalState: any
   onReplay: (ticker: string) => void
+  onViewLogs?: () => void
 }
 
-export const FinalReport: React.FC<FinalReportProps> = ({ ticker, finalState, onReplay }) => {
+export const FinalReport: React.FC<FinalReportProps> = ({ ticker, finalState, onReplay, onViewLogs }) => {
   // Extract final trade decision and determine color
   const decision = finalState.final_trade_decision || ""
   const isBullish = decision.toLowerCase().includes("buy") || decision.toLowerCase().includes("bullish")
@@ -67,6 +72,36 @@ export const FinalReport: React.FC<FinalReportProps> = ({ ticker, finalState, on
           <p className="text-sm text-muted-foreground">
             Pipeline synthesis for <strong className="text-foreground">{ticker || "Asset"}</strong> has concluded.
           </p>
+          
+          {finalState.used_models && (
+            <div className="mt-3 flex flex-wrap gap-2 text-xs">
+              <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 flex gap-1.5 py-0.5">
+                <Cpu className="h-3 w-3" />
+                {finalState.used_models.provider.charAt(0).toUpperCase() + finalState.used_models.provider.slice(1)}
+              </Badge>
+              {finalState.used_models.model ? (
+                <Badge variant="outline" className="bg-primary/5 text-muted-foreground border-primary/20 flex gap-1.5 py-0.5">
+                  <Cpu className="h-3 w-3" />
+                  {finalState.used_models.model.split(" - ")[0]}
+                </Badge>
+              ) : (
+                <>
+                  {finalState.used_models.quick_think_model && (
+                    <Badge variant="outline" className="bg-yellow-500/5 text-yellow-500 border-yellow-500/20 flex gap-1.5 py-0.5">
+                      <Zap className="h-3 w-3" />
+                      {finalState.used_models.quick_think_model.split(" - ")[0]}
+                    </Badge>
+                  )}
+                  {finalState.used_models.deep_think_model && (
+                    <Badge variant="outline" className="bg-purple-500/5 text-purple-400 border-purple-500/20 flex gap-1.5 py-0.5">
+                      <BrainCircuit className="h-3 w-3" />
+                      {finalState.used_models.deep_think_model.split(" - ")[0]}
+                    </Badge>
+                  )}
+                </>
+              )}
+            </div>
+          )}
         </div>
 
         <div className={`z-10 flex items-center gap-3 px-4 py-3 rounded-xl border ${decisionBg} backdrop-blur-md`}>
@@ -202,7 +237,16 @@ export const FinalReport: React.FC<FinalReportProps> = ({ ticker, finalState, on
       </Tabs>
 
       {/* Actions */}
-      <div className="pt-4 flex justify-end">
+      <div className="pt-4 flex justify-end gap-3">
+        {onViewLogs && (
+          <Button 
+            variant="outline" 
+            onClick={onViewLogs}
+            className="text-sm h-9 border-primary/20 hover:border-primary/50 text-muted-foreground hover:text-primary transition-all flex items-center gap-2 bg-background/50 backdrop-blur-sm"
+          >
+            <Activity className="h-4 w-4" /> View Execution Logs
+          </Button>
+        )}
         <Button 
           variant="outline" 
           onClick={() => onReplay(ticker)}

@@ -13,7 +13,7 @@ interface HistorySidebarProps {
   refreshTrigger?: number
 }
 
-export const HistorySidebar: React.FC<HistorySidebarProps> = ({ isOpen, onClose, onSelectSession, onNewChat, refreshTrigger }) => {
+export const HistorySidebar: React.FC<HistorySidebarProps> = React.memo(({ isOpen, onClose, onSelectSession, onNewChat, refreshTrigger }) => {
   const [sessions, setSessions] = useState<any[]>([])
   const [editingId, setEditingId] = useState<number | null>(null)
   const [editTitle, setEditTitle] = useState("")
@@ -148,4 +148,5 @@ export const HistorySidebar: React.FC<HistorySidebarProps> = ({ isOpen, onClose,
       </ScrollArea>
     </div>
   )
-}
+})
+HistorySidebar.displayName = 'HistorySidebar';
