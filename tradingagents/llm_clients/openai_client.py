@@ -164,6 +164,7 @@ _PROVIDER_BASE_URL = {
     "minimax-cn": "https://api.minimaxi.com/v1",
     "openrouter": "https://openrouter.ai/api/v1",
     "ollama":     "http://localhost:11434/v1",
+    "lmstudio":   "http://localhost:1234/api/v1",
 }
 
 
@@ -210,8 +211,17 @@ class OpenAIClient(BaseLLMClient):
         # Provider-specific base URL and auth. An explicit base_url on the
         # client (e.g. a corporate proxy) takes precedence over the
         # provider default so users can route through their own gateway.
+        resolved_base_url = self.base_url
         if self.provider in _PROVIDER_BASE_URL:
-            llm_kwargs["base_url"] = self.base_url or _resolve_provider_base_url(self.provider)
+            resolved_base_url = resolved_base_url or _resolve_provider_base_url(self.provider)
+
+        if resolved_base_url and self.provider == "lmstudio":
+            base_url_stripped = resolved_base_url.rstrip("/")
+            if base_url_stripped.endswith("/api/v1"):
+                resolved_base_url = base_url_stripped[:-7] + "/v1"
+
+        if self.provider in _PROVIDER_BASE_URL:
+            llm_kwargs["base_url"] = resolved_base_url
             api_key_env = get_api_key_env(self.provider)
             if api_key_env:
                 api_key = self.kwargs.get("api_key") or os.environ.get(api_key_env)
@@ -227,12 +237,12 @@ class OpenAIClient(BaseLLMClient):
                     )
             else:
                 llm_kwargs["api_key"] = "ollama"
-        elif self.base_url:
-            llm_kwargs["base_url"] = self.base_url
+        elif resolved_base_url:
+            llm_kwargs["base_url"] = resolved_base_url
 
         # Forward user-provided kwargs
         for key in _PASSTHROUGH_KWARGS:
-            if key in self.kwargs:
+            if key in self.kwargs and self.kwargs[key] is not None:
                 llm_kwargs[key] = self.kwargs[key]
 
         # Native OpenAI: use Responses API for consistent behavior across

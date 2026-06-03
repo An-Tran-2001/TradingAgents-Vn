@@ -171,6 +171,7 @@ interface ChatInterfaceProps {
   isHistoryOpen: boolean
   setIsHistoryOpen: (open: boolean) => void
   onSend: (text: string, ticker?: string) => void
+  activeTool?: string | null
 }
 
 export const ChatInterface: React.FC<ChatInterfaceProps> = ({
@@ -179,6 +180,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   isHistoryOpen,
   setIsHistoryOpen,
   onSend,
+  activeTool,
 }) => {
   const { t } = useLanguage()
   const [inputValue, setInputValue] = useState("")
@@ -337,12 +339,18 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 <div className="flex items-center gap-2 px-1">
                   <span className="text-sm font-semibold">Tauric Nexus</span>
                 </div>
-                <div className="bg-card/40 backdrop-blur-sm border border-border/50 px-6 py-5 rounded-2xl rounded-tl-sm shadow-sm flex items-center h-[62px]">
+                <div className="bg-card/40 backdrop-blur-sm border border-border/50 px-6 py-4 rounded-2xl rounded-tl-sm shadow-sm flex flex-col items-start justify-center gap-2 min-h-[62px]">
                   <div className="flex gap-1.5">
                     <div className="h-2 w-2 rounded-full bg-primary/60 animate-bounce [animation-delay:-0.3s]"></div>
                     <div className="h-2 w-2 rounded-full bg-primary/60 animate-bounce [animation-delay:-0.15s]"></div>
                     <div className="h-2 w-2 rounded-full bg-primary/60 animate-bounce"></div>
                   </div>
+                  {activeTool && (
+                    <div className="text-xs text-primary/80 mt-1 flex items-center gap-1.5 animate-pulse">
+                      <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+                      Running tool: <code className="bg-black/40 px-1 py-0.5 rounded text-[11px] font-mono text-cyan-300">{activeTool}</code>...
+                    </div>
+                  )}
                 </div>
               </div>
             </motion.div>

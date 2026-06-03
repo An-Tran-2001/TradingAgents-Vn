@@ -292,6 +292,7 @@ export default function SettingsPage() {
                       <SelectItem value="google">Google Gemini</SelectItem>
                       <SelectItem value="deepseek">DeepSeek</SelectItem>
                       <SelectItem value="ollama">Local (Ollama)</SelectItem>
+                      <SelectItem value="lmstudio">Local (LM Studio)</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

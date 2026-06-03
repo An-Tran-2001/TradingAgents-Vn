@@ -60,6 +60,7 @@ const PROVIDER_ICONS: Record<string, { Icon: ProviderIconComponent; color: strin
   openrouter:   { Icon: OpenRouterIcon, color: "text-green-500", bg: "bg-green-500/10" },
   azure:        { Icon: AzureIcon, color: "text-sky-500", bg: "bg-sky-500/10" },
   ollama:       { Icon: OllamaIcon, color: "text-emerald-500", bg: "bg-emerald-500/10" },
+  lmstudio:     { Icon: Cpu, color: "text-indigo-500", bg: "bg-indigo-500/10" },
   _default:     { Icon: Cloud, color: "text-muted-foreground", bg: "bg-muted" },
 }
 

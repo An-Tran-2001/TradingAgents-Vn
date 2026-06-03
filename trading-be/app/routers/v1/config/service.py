@@ -105,6 +105,12 @@ _PROVIDERS: List[Dict] = [
         "base_url": "http://localhost:11434/v1",
         "requires_api_key": False,
     },
+    {
+        "id": "lmstudio",
+        "name": "LM Studio (Local)",
+        "base_url": "http://localhost:1234/api/v1",
+        "requires_api_key": False,
+    },
 ]
 
 # ── Model catalog (mirrors tradingagents/llm_clients/model_catalog.py) ─────────
@@ -221,6 +227,16 @@ _MODEL_CATALOG: Dict[str, Dict[str, List[tuple]]] = {
             ("Qwen3:latest (8B)", "qwen3:latest"),
         ],
     },
+    "lmstudio": {
+        "quick": [
+            ("Llama 3 8B Instruct", "meta-llama-3-8b-instruct"),
+            ("Qwen 2.5 7B Instruct", "qwen2.5-7b-instruct"),
+        ],
+        "deep": [
+            ("Llama 3 8B Instruct", "meta-llama-3-8b-instruct"),
+            ("Qwen 2.5 7B Instruct", "qwen2.5-7b-instruct"),
+        ],
+    },
 }
 # Regional aliases share the same models
 _MODEL_CATALOG["qwen-cn"] = _MODEL_CATALOG["qwen"]
@@ -268,9 +284,10 @@ class ConfigService:
             for p in _PROVIDERS
         ]
 
-    def get_provider_models(self, provider_id: str, user_api_keys: dict = None) -> ProviderDetailResponse:
+    async def get_provider_models(self, provider_id: str, user_api_keys: dict = None, llm_backend_url: Optional[str] = None) -> ProviderDetailResponse:
         user_api_keys = user_api_keys or {}
-        provider_data = next((p for p in _PROVIDERS if p["id"] == provider_id.lower()), None)
+        provider_lower = provider_id.lower()
+        provider_data = next((p for p in _PROVIDERS if p["id"] == provider_lower), None)
         if not provider_data:
             raise HTTPException(status_code=404, detail=f"Provider '{provider_id}' is not supported.")
 
@@ -283,20 +300,79 @@ class ConfigService:
             regions=provider_data.get("regions"),
         )
 
-        model_catalog = _MODEL_CATALOG.get(provider_id.lower(), {})
         models: List[ModelInfo] = []
 
-        # For openrouter and azure, no static models
-        for mode, options in model_catalog.items():
-            seen_ids = set()
-            for display_name, model_id in options:
-                if model_id == "custom" or model_id in seen_ids:
-                    continue
-                seen_ids.add(model_id)
-                models.append(ModelInfo(
-                    id=model_id,
-                    name=display_name,
-                    mode=mode,
-                ))
+        if provider_lower in ("ollama", "lmstudio"):
+            base_url = llm_backend_url or provider_data.get("base_url")
+            if not base_url:
+                base_url = "http://localhost:11434/v1" if provider_lower == "ollama" else "http://localhost:1234/api/v1"
+
+            try:
+                import httpx
+                base_url_stripped = base_url.rstrip("/")
+                if provider_lower == "ollama":
+                    if base_url_stripped.endswith("/tags"):
+                        url = base_url_stripped
+                    else:
+                        if base_url_stripped.endswith("/v1"):
+                            endpoint = base_url_stripped[:-3]
+                        elif base_url_stripped.endswith("/api/v1"):
+                            endpoint = base_url_stripped[:-7]
+                        else:
+                            endpoint = base_url_stripped
+                        url = f"{endpoint}/api/tags"
+                    
+                    async with httpx.AsyncClient(timeout=2.0) as client:
+                        response = await client.get(url)
+                        if response.status_code == 200:
+                            response_data = response.json()
+                            for m in response_data.get("models", []):
+                                m_name = m.get("name")
+                                if m_name:
+                                    models.append(ModelInfo(id=m_name, name=m_name, mode="quick"))
+                                    models.append(ModelInfo(id=m_name, name=m_name, mode="deep"))
+                else:  # lmstudio
+                    if base_url_stripped.endswith("/models"):
+                        url = base_url_stripped
+                    elif base_url_stripped.endswith("/api/v1") or base_url_stripped.endswith("/v1"):
+                        url = f"{base_url_stripped}/models"
+                    else:
+                        url = f"{base_url_stripped}/api/v1/models"
+                    
+                    async with httpx.AsyncClient(timeout=2.0) as client:
+                        response = await client.get(url)
+                        if response.status_code == 200:
+                            response_data = response.json()
+                            if "models" in response_data:
+                                for m in response_data.get("models", []):
+                                    # filter out non-LLM models if they exist, or show all
+                                    m_id = m.get("key") or m.get("id")
+                                    m_name = m.get("display_name") or m_id
+                                    if m_id:
+                                        models.append(ModelInfo(id=m_id, name=m_name, mode="quick"))
+                                        models.append(ModelInfo(id=m_id, name=m_name, mode="deep"))
+                            elif "data" in response_data:
+                                for m in response_data.get("data", []):
+                                    m_id = m.get("id")
+                                    if m_id:
+                                        models.append(ModelInfo(id=m_id, name=m_id, mode="quick"))
+                                        models.append(ModelInfo(id=m_id, name=m_id, mode="deep"))
+            except Exception as e:
+                # Log or print warning, fall back to static list below
+                pass
+
+        if not models:
+            model_catalog = _MODEL_CATALOG.get(provider_lower, {})
+            for mode, options in model_catalog.items():
+                seen_ids = set()
+                for display_name, model_id in options:
+                    if model_id == "custom" or model_id in seen_ids:
+                        continue
+                    seen_ids.add(model_id)
+                    models.append(ModelInfo(
+                        id=model_id,
+                        name=display_name,
+                        mode=mode,
+                    ))
 
         return ProviderDetailResponse(provider=provider_info, models=models)

@@ -180,11 +180,21 @@ class OrchestratorAgent:
                 handoff_triggered = False
                 for tool_call in gathered.tool_calls:
                     if tool_call["name"] == "run_financial_research":
+                        yield {
+                            "type": "orchestrator_tool_start",
+                            "tool": "run_financial_research",
+                            "args": tool_call["args"],
+                        }
                         yield {"type": "handoff", "args": tool_call["args"]}
                         handoff_triggered = True
                         break
                     elif tool_call["name"] == "get_user_guide":
                         try:
+                            yield {
+                                "type": "orchestrator_tool_start",
+                                "tool": "get_user_guide",
+                                "args": tool_call["args"],
+                            }
                             # Provide a mask/citation to the agent instead of raw huge text
                             mask = "[TradingAgents User Guide](citation:user_guide)"
                             tool_msg = ToolMessage(
@@ -193,6 +203,11 @@ class OrchestratorAgent:
                                 content=f"Success. The guide is available via this mask: {mask}. Please respond to the user concisely and include this exact mask in your response so the frontend can render it.",
                             )
                             messages.append(tool_msg)
+                            yield {
+                                "type": "orchestrator_tool_end",
+                                "tool": "get_user_guide",
+                                "result": "Success. User Guide loaded.",
+                            }
                         except Exception as e:
                             logger.error(f"Failed to process user guide tool: {e}")
                             messages.append(
@@ -204,6 +219,11 @@ class OrchestratorAgent:
                             )
                     elif tool_call["name"] == "get_current_stock_price":
                         try:
+                            yield {
+                                "type": "orchestrator_tool_start",
+                                "tool": "get_current_stock_price",
+                                "args": tool_call["args"],
+                            }
                             result = get_current_stock_price.invoke(tool_call["args"])
                             messages.append(
                                 ToolMessage(
@@ -212,6 +232,11 @@ class OrchestratorAgent:
                                     content=str(result),
                                 )
                             )
+                            yield {
+                                "type": "orchestrator_tool_end",
+                                "tool": "get_current_stock_price",
+                                "result": str(result),
+                            }
                         except Exception as e:
                             logger.error(
                                 f"Failed to process get_current_stock_price tool: {e}"
@@ -226,6 +251,11 @@ class OrchestratorAgent:
 
                     elif tool_call["name"] == "search_web":
                         try:
+                            yield {
+                                "type": "orchestrator_tool_start",
+                                "tool": "search_web",
+                                "args": tool_call["args"],
+                            }
                             result = search_web.invoke(tool_call["args"])
                             messages.append(
                                 ToolMessage(
@@ -234,6 +264,11 @@ class OrchestratorAgent:
                                     content=str(result),
                                 )
                             )
+                            yield {
+                                "type": "orchestrator_tool_end",
+                                "tool": "search_web",
+                                "result": str(result),
+                            }
                         except Exception as e:
                             logger.error(f"Failed to process search_web tool: {e}")
                             messages.append(
@@ -245,6 +280,11 @@ class OrchestratorAgent:
                             )
                     elif tool_call["name"] == "scrape_links":
                         try:
+                            yield {
+                                "type": "orchestrator_tool_start",
+                                "tool": "scrape_links",
+                                "args": tool_call["args"],
+                            }
                             # Using await since the tool is async and stream_response is async
                             result = await scrape_links.ainvoke(tool_call["args"])
                             messages.append(
@@ -254,6 +294,11 @@ class OrchestratorAgent:
                                     content=str(result),
                                 )
                             )
+                            yield {
+                                "type": "orchestrator_tool_end",
+                                "tool": "scrape_links",
+                                "result": str(result),
+                            }
                         except Exception as e:
                             logger.error(f"Failed to process scrape_links tool: {e}")
                             messages.append(
@@ -265,6 +310,11 @@ class OrchestratorAgent:
                             )
                     elif tool_call["name"] == "query_past_report":
                         try:
+                            yield {
+                                "type": "orchestrator_tool_start",
+                                "tool": "query_past_report",
+                                "args": tool_call["args"],
+                            }
                             # Using await since the tool is async
                             result = await query_past_report.ainvoke(tool_call["args"])
                             messages.append(
@@ -274,6 +324,11 @@ class OrchestratorAgent:
                                     content=str(result),
                                 )
                             )
+                            yield {
+                                "type": "orchestrator_tool_end",
+                                "tool": "query_past_report",
+                                "result": str(result),
+                            }
                         except Exception as e:
                             logger.error(f"Failed to process query_past_report tool: {e}")
                             messages.append(
@@ -285,6 +340,11 @@ class OrchestratorAgent:
                             )
                     elif tool_call["name"] == "get_current_datetime":
                         try:
+                            yield {
+                                "type": "orchestrator_tool_start",
+                                "tool": "get_current_datetime",
+                                "args": tool_call["args"],
+                            }
                             result = get_current_datetime.invoke(tool_call["args"])
                             messages.append(
                                 ToolMessage(
@@ -293,6 +353,11 @@ class OrchestratorAgent:
                                     content=str(result),
                                 )
                             )
+                            yield {
+                                "type": "orchestrator_tool_end",
+                                "tool": "get_current_datetime",
+                                "result": str(result),
+                            }
                         except Exception as e:
                             logger.error(
                                 f"Failed to process get_current_datetime tool: {e}"

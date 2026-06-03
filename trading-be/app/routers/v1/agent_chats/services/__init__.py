@@ -163,6 +163,7 @@ class ChatService:
                 model=quick_model, 
                 language=language, 
                 api_key=api_key,
+                backend_url=user_settings.llm_backend_url if (user_settings and user_settings.llm_backend_url and provider in ("ollama", "lmstudio")) else None,
                 **orchestrator_kwargs
             )
         except Exception as e:
@@ -180,6 +181,9 @@ class ChatService:
 
             elif event["type"] == "done":
                 final_text = event.get("full_content", "")
+
+            elif event["type"] in ["orchestrator_tool_start", "orchestrator_tool_end"]:
+                yield f"data: {json.dumps(event)}\n\n"
 
             elif event["type"] == "handoff":
                 ticker = event["args"].get("ticker", request_data.get("ticker", "AAPL"))
@@ -206,6 +210,8 @@ class ChatService:
                 if api_key:
                     config["api_key"] = api_key
                 config["analysis_date"] = analysis_date
+                if user_settings and user_settings.llm_backend_url and provider in ("ollama", "lmstudio"):
+                    config["backend_url"] = user_settings.llm_backend_url
 
                 # Create the Assistant Message and Report beforehand
                 assistant_msg = await self.chat_message_repo.create(

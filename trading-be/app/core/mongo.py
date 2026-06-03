@@ -1,6 +1,10 @@
 from motor.motor_asyncio import AsyncIOMotorClient
 from app.core.config import settings
 
+# Monkeypatch AsyncIOMotorClient to prevent Beanie/Motor compatibility issues with append_metadata
+if not hasattr(AsyncIOMotorClient, "append_metadata"):
+    AsyncIOMotorClient.append_metadata = lambda self, *args, **kwargs: None
+
 class MongoDB:
     client: AsyncIOMotorClient = None
     db = None

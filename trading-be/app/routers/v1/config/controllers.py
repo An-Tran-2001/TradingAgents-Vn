@@ -52,6 +52,7 @@ async def get_provider_models(
     setting_repo: SettingRepository = Depends()
 ) -> ProviderDetailResponse:
     user_api_keys = {}
+    llm_backend_url = None
     token = request.headers.get("Authorization")
     if token and token.startswith("Bearer "):
         try:
@@ -59,9 +60,12 @@ async def get_provider_models(
             payload = jwt.decode(token_val, settings.SECRET_KEY, algorithms=[ALGORITHM])
             user_id = int(payload.get("sub"))
             user_settings = await setting_repo.get_by_user_id(user_id)
-            if user_settings and user_settings.api_keys:
-                user_api_keys = user_settings.api_keys
+            if user_settings:
+                if user_settings.api_keys:
+                    user_api_keys = user_settings.api_keys
+                if user_settings.llm_backend_url:
+                    llm_backend_url = user_settings.llm_backend_url
         except Exception:
             pass
             
-    return service.get_provider_models(provider_id, user_api_keys)
+    return await service.get_provider_models(provider_id, user_api_keys, llm_backend_url)

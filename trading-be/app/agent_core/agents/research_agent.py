@@ -10,7 +10,6 @@ from pydantic import BaseModel, Field
 from tradingagents.graph.trading_graph import TradingAgentsGraph
 from tradingagents.default_config import DEFAULT_CONFIG
 from app.agent_core.common.date import normalize_analysis_date
-from app.routers.v1.agent_reports.models.non_relational import AgentLog
 from tradingagents.llm_clients import create_llm_client
 from langchain_core.messages import HumanMessage, AIMessageChunk
 from langgraph.prebuilt import create_react_agent
@@ -54,6 +53,25 @@ class ReportExtractionSchema(BaseModel):
 
 # Node Name to Readable Agent Name Mapping
 AGENT_NAME_MAPPING = {
+    "Market Analyst": "Technical Analyst",
+    "Sentiment Analyst": "Sentiment Analyst",
+    "News Analyst": "News Analyst",
+    "Fundamentals Analyst": "Fundamentals Analyst",
+    "Bull Researcher": "Bull Researcher",
+    "Bear Researcher": "Bear Researcher",
+    "Research Manager": "Research Manager",
+    "Aggressive Analyst": "Risk Management",
+    "Neutral Analyst": "Risk Management",
+    "Conservative Analyst": "Risk Management",
+    "Portfolio Manager": "Portfolio Manager",
+    "Trader": "Trader",
+    "System": "System",
+    # Mappings for tool nodes
+    "tools_market": "Technical Analyst",
+    "tools_social": "Sentiment Analyst",
+    "tools_news": "News Analyst",
+    "tools_fundamentals": "Fundamentals Analyst",
+    # Legacy mappings just in case
     "analyst_market": "Technical Analyst",
     "analyst_fundamentals": "Fundamentals Analyst",
     "analyst_social": "Sentiment Analyst",
@@ -68,6 +86,105 @@ AGENT_NAME_MAPPING = {
     "trader": "Trader",
     "generate_reports": "System",
 }
+
+def classify_and_format_message(msg, node_name: str) -> list:
+    """
+    Classify a message from state_update["messages"] and return list of formatted event dicts.
+    """
+    from langchain_core.messages import AIMessage, ToolMessage, HumanMessage
+    events = []
+
+    # 1. Process Tool Calls in AIMessages
+    if hasattr(msg, "tool_calls") and msg.tool_calls:
+        for tool_call in msg.tool_calls:
+            if isinstance(tool_call, dict):
+                tc_name = tool_call.get("name", "")
+                tc_args = tool_call.get("args", {})
+            else:
+                tc_name = getattr(tool_call, "name", "")
+                tc_args = getattr(tool_call, "args", {})
+
+            # Format arguments cleanly
+            if isinstance(tc_args, dict):
+                formatted_args = []
+                for k, v in tc_args.items():
+                    val_str = repr(v)
+                    if len(val_str) > 40:
+                        val_str = val_str[:37] + "..."
+                    formatted_args.append(f"{k}={val_str}")
+                args_str = ", ".join(formatted_args)
+            else:
+                args_str = str(tc_args)
+                if len(args_str) > 60:
+                    args_str = args_str[:57] + "..."
+
+            events.append({
+                "type": "message",
+                "node": node_name,
+                "content": f"**Action**: call tool `{tc_name}({args_str})`",
+                "log_type": "Action"
+            })
+
+    # 2. Process message content
+    raw_content = getattr(msg, "content", None)
+    content_str = ""
+    if raw_content:
+        if isinstance(raw_content, str):
+            content_str = raw_content.strip()
+        elif isinstance(raw_content, list):
+            parts = []
+            for item in raw_content:
+                if isinstance(item, dict) and item.get("type") == "text":
+                    parts.append(item.get("text", "").strip())
+                elif isinstance(item, str):
+                    parts.append(item.strip())
+            content_str = "\n".join(p for p in parts if p)
+        elif isinstance(raw_content, dict):
+            content_str = raw_content.get("text", "").strip() or str(raw_content)
+        else:
+            content_str = str(raw_content).strip()
+
+    if content_str and content_str != "Continue":
+        if isinstance(msg, ToolMessage) or "ToolMessage" in msg.__class__.__name__:
+            # Tool message output - summarize and prevent "data rác"
+            tool_name = getattr(msg, "name", None) or getattr(msg, "tool_name", "tool")
+            content_len = len(content_str)
+            snippet = content_str
+            if content_len > 150:
+                snippet = content_str[:147] + "..."
+            
+            # Escape newlines to keep snippet clean in table format
+            snippet = snippet.replace("\n", " ")
+            formatted_content = f"**Tool Output**: `{tool_name}` returned: {snippet} ({content_len} bytes)"
+            events.append({
+                "type": "message",
+                "node": node_name,
+                "content": formatted_content,
+                "log_type": "Tool"
+            })
+        elif isinstance(msg, AIMessage) or "AIMessage" in msg.__class__.__name__:
+            events.append({
+                "type": "message",
+                "node": node_name,
+                "content": content_str,
+                "log_type": "Reasoning"
+            })
+        elif isinstance(msg, HumanMessage) or "HumanMessage" in msg.__class__.__name__:
+            events.append({
+                "type": "message",
+                "node": node_name,
+                "content": content_str,
+                "log_type": "User"
+            })
+        else:
+            events.append({
+                "type": "message",
+                "node": node_name,
+                "content": content_str,
+                "log_type": "System"
+            })
+
+    return events
 
 
 class ResearchAgentRunner:
@@ -84,8 +201,6 @@ class ResearchAgentRunner:
         - active_teams
         """
         self.config = {**DEFAULT_CONFIG, **config}
-        print(self.config)
-
         # Normalize analysis_date early so the graph always gets a YYYY-MM-DD date.
         if self.config.get("analysis_date"):
             normalized_date = normalize_analysis_date(self.config["analysis_date"])
@@ -134,6 +249,8 @@ class ResearchAgentRunner:
         Runs the TradingAgentsGraph and yields JSON stream events for the UI.
         Saves intermediate reasoning into MongoDB via AgentLog.
         """
+        from app.routers.v1.agent_reports.models.non_relational import AgentLog
+
         ticker = self.config.get("ticker", "AAPL")
         asset_type = self.config.get("asset_type", "stock")
         trade_date = self.config.get(
@@ -204,31 +321,70 @@ class ResearchAgentRunner:
                     else {}
                 )
                 args["stream_mode"] = "updates"
+                
+                processed_msg_ids = set()
 
                 for chunk in graph_runner.graph.stream(init_agent_state, **args):
                     for node_name, state_update in chunk.items():
                         if isinstance(state_update, dict):
                             final_state.update(state_update)
-                            if "messages" in state_update and state_update["messages"]:
-                                last_msg = state_update["messages"][-1]
-                                loop.call_soon_threadsafe(
-                                    queue.put_nowait,
-                                    {
-                                        "type": "message",
-                                        "node": node_name,
-                                        "content": getattr(last_msg, "content", ""),
-                                        "name": getattr(last_msg, "name", node_name),
-                                    },
-                                )
+                            
+                            has_messages = "messages" in state_update and state_update["messages"]
+                            if has_messages:
+                                for msg in state_update["messages"]:
+                                    msg_id = getattr(msg, "id", None)
+                                    if not msg_id:
+                                        msg_id = f"{msg.__class__.__name__}_{hash(str(getattr(msg, 'content', '')))}"
+                                    
+                                    if msg_id in processed_msg_ids:
+                                        continue
+                                    processed_msg_ids.add(msg_id)
+                                    
+                                    events = classify_and_format_message(msg, node_name)
+                                    for ev in events:
+                                        loop.call_soon_threadsafe(queue.put_nowait, ev)
                             else:
-                                loop.call_soon_threadsafe(
-                                    queue.put_nowait,
-                                    {
-                                        "type": "chunk",
-                                        "node": node_name,
-                                        "state": state_update,
-                                    },
-                                )
+                                # Extract non-message updates (chunks)
+                                content = ""
+                                log_type = "Reasoning"
+                                
+                                if "investment_debate_state" in state_update:
+                                    debate = state_update["investment_debate_state"]
+                                    if node_name == "Bull Researcher":
+                                        content = debate.get("current_response", "")
+                                        log_type = "Reasoning"
+                                    elif node_name == "Bear Researcher":
+                                        content = debate.get("current_response", "")
+                                        log_type = "Reasoning"
+                                    elif node_name == "Research Manager":
+                                        content = debate.get("judge_decision", "")
+                                        log_type = "Synthesis"
+                                        
+                                elif "risk_debate_state" in state_update:
+                                    risk = state_update["risk_debate_state"]
+                                    if node_name == "Aggressive Analyst":
+                                        content = risk.get("current_aggressive_response", "")
+                                        log_type = "Reasoning"
+                                    elif node_name == "Neutral Analyst":
+                                        content = risk.get("current_neutral_response", "")
+                                        log_type = "Reasoning"
+                                    elif node_name == "Conservative Analyst":
+                                        content = risk.get("current_conservative_response", "")
+                                        log_type = "Reasoning"
+                                    elif node_name == "Portfolio Manager":
+                                        content = risk.get("judge_decision", "")
+                                        log_type = "Synthesis"
+                                        
+                                if content and content.strip():
+                                    loop.call_soon_threadsafe(
+                                        queue.put_nowait,
+                                        {
+                                            "type": "message",
+                                            "node": node_name,
+                                            "content": content.strip(),
+                                            "log_type": log_type
+                                        }
+                                    )
                         else:
                             # Fallback if chunk is not in 'updates' format (e.g., 'values' mode is forced somehow)
                             # In values mode, chunk is the state dict itself, so node_name is a state key.
@@ -238,16 +394,18 @@ class ResearchAgentRunner:
                                 and isinstance(state_update, list)
                                 and len(state_update) > 0
                             ):
-                                last_msg = state_update[-1]
-                                loop.call_soon_threadsafe(
-                                    queue.put_nowait,
-                                    {
-                                        "type": "message",
-                                        "node": "System",
-                                        "content": getattr(last_msg, "content", ""),
-                                        "name": getattr(last_msg, "name", "System"),
-                                    },
-                                )
+                                for msg in state_update:
+                                    msg_id = getattr(msg, "id", None)
+                                    if not msg_id:
+                                        msg_id = f"{msg.__class__.__name__}_{hash(str(getattr(msg, 'content', '')))}"
+                                    
+                                    if msg_id in processed_msg_ids:
+                                        continue
+                                    processed_msg_ids.add(msg_id)
+                                    
+                                    events = classify_and_format_message(msg, "System")
+                                    for ev in events:
+                                        loop.call_soon_threadsafe(queue.put_nowait, ev)
 
                 # Log final state
                 graph_runner.curr_state = final_state
@@ -263,7 +421,8 @@ class ResearchAgentRunner:
                     llm_client = create_llm_client(
                         provider=self.config.get("llm_provider", "openai"),
                         model=self.config.get("deep_think_llm", "gpt-4o"),
-                        api_key=self.config.get("api_key")
+                        api_key=self.config.get("api_key"),
+                        base_url=self.config.get("backend_url"),
                     ).get_llm()
                     
                     trader_plan = final_state.get("trader_investment_plan", "")
@@ -337,6 +496,7 @@ Chief Editor's Summary:
 Ensure you synthesize 5 days of forecast data and map the individual analyst findings correctly to the required schema."""
                     result_json = structured_llm.invoke([HumanMessage(content=prompt)])
                     report_dict = result_json.model_dump()
+                    print(json.dumps(report_dict, indent=2))
                     final_state["structured_report"] = report_dict
                     
                     # 3. Format JSON into Markdown and send to UI
@@ -432,64 +592,21 @@ Ensure you synthesize 5 days of forecast data and map the individual analyst fin
                 continue
 
             # Emit Agent Log event for UI
-            if event["type"] in ["chunk", "message"]:
+            if event["type"] == "message":
                 node_name = event["node"]
                 agent_readable = AGENT_NAME_MAPPING.get(node_name, node_name)
-
                 content = event.get("content", "")
-                if not content and "state" in event:
-                    state_dict = event["state"]
-                    # Extract from nested states
-                    if "investment_debate_state" in state_dict:
-                        debate = state_dict["investment_debate_state"]
-                        if agent_readable == "Bull Researcher":
-                            content = debate.get("bull_history", "")
-                        elif agent_readable == "Bear Researcher":
-                            content = debate.get("bear_history", "")
-                        elif agent_readable == "Research Manager":
-                            content = debate.get("judge_decision", "")
-                    elif "risk_debate_state" in state_dict:
-                        risk = state_dict["risk_debate_state"]
-                        if agent_readable == "Aggressive Analyst":
-                            content = risk.get("aggressive_history", "")
-                        elif agent_readable == "Neutral Analyst":
-                            content = risk.get("neutral_history", "")
-                        elif agent_readable == "Conservative Analyst":
-                            content = risk.get("conservative_history", "")
-                        elif agent_readable == "Portfolio Manager":
-                            content = risk.get("judge_decision", "")
-                    elif "trader_investment_plan" in state_dict:
-                        content = state_dict["trader_investment_plan"]
-                    elif (
-                        "market_report" in state_dict and node_name == "analyst_market"
-                    ):
-                        content = state_dict["market_report"]
-                    elif (
-                        "fundamentals_report" in state_dict
-                        and node_name == "analyst_fundamentals"
-                    ):
-                        content = state_dict["fundamentals_report"]
-                    elif (
-                        "sentiment_report" in state_dict
-                        and node_name == "analyst_social"
-                    ):
-                        content = state_dict["sentiment_report"]
-                    elif "news_report" in state_dict and node_name == "analyst_news":
-                        content = state_dict["news_report"]
+                log_type = event.get("log_type", "Reasoning")
 
                 if not content or content.strip() == "":
-                    content = "State updated."
+                    continue
 
                 # Save to MongoDB
                 log_entry = AgentLog(
                     report_id=report_id,
-                    team="Research Pipeline",  # Can derive from node prefix
+                    team="Research Pipeline",
                     agent_name=agent_readable,
-                    log_type=(
-                        "Action"
-                        if "Action" in content
-                        else "Synthesis" if "Synthesis" in content else "Reasoning"
-                    ),
+                    log_type=log_type,
                     content=content,
                     meta_data={"node": node_name},
                 )
@@ -500,7 +617,7 @@ Ensure you synthesize 5 days of forecast data and map the individual analyst fin
                     "type": "agent_log",
                     "step": step_counter,
                     "agent": agent_readable,
-                    "log_type": "Agent",
+                    "log_type": log_type,
                     "content": content,
                     "time": datetime.datetime.now().strftime("%H:%M:%S"),
                 }

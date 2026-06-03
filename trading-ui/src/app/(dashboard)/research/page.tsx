@@ -53,6 +53,7 @@ export default function AgentsResearchPage() {
   const [isCliExpanded, setIsCliExpanded] = useState(false)
   const [logAnimationStep, setLogAnimationStep] = useState(0)
   const [activeLogTab, setActiveLogTab] = useState<string>("All")
+  const [activeTool, setActiveTool] = useState<string | null>(null)
   
   // History Sidebar State
   const [isHistoryOpen, setIsHistoryOpen] = useState(false)
@@ -176,6 +177,7 @@ export default function AgentsResearchPage() {
 
     setMessages((prev) => [...prev, newMsg])
     setIsTyping(true)
+    setActiveTool(null)
     setIsResearching(false)
     setIsViewingLogs(false)
     setIsCliExpanded(false)
@@ -286,6 +288,7 @@ export default function AgentsResearchPage() {
                 }
               } else if (data.type === "done") {
                 setIsTyping(false); // Safety fallback
+                setActiveTool(null);
               } else if (data.type === "text") {
                 // Fallback for older non-streaming API events
                 setMessages(prev => [...prev, {
@@ -295,14 +298,37 @@ export default function AgentsResearchPage() {
                   timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
                 }]);
                 setIsTyping(false);
+                setActiveTool(null);
               } else if (data.type === "handoff") {
                 setIsResearching(true);
+                setActiveTool(null);
                 setMessages(prev => [...prev, {
                   id: Date.now().toString(),
                   role: "assistant",
                   content: data.content || "Starting financial research pipeline...",
                   timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
                 }]);
+              } else if (data.type === "orchestrator_tool_start") {
+                setActiveTool(data.tool);
+                const newLog: AgentLog = {
+                  step: 0,
+                  time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+                  agent: "System",
+                  type: "Action",
+                  content: `**Orchestrator Action**: Calling tool \`${data.tool}\` with args: \`${JSON.stringify(data.args)}\``
+                };
+                setLogs(prev => [...prev, newLog]);
+              } else if (data.type === "orchestrator_tool_end") {
+                setActiveTool(null);
+                const snippet = data.result && data.result.length > 120 ? data.result.slice(0, 117) + "..." : data.result;
+                const newLog: AgentLog = {
+                  step: 0,
+                  time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+                  agent: "System",
+                  type: "Tool",
+                  content: `**Orchestrator Tool Result**: \`${data.tool}\` execution completed. Output: \`${snippet}\``
+                };
+                setLogs(prev => [...prev, newLog]);
               } else if (data.type === "agent_log") {
                 setIsResearching(true);
                 const newLog: AgentLog = {
@@ -337,6 +363,7 @@ export default function AgentsResearchPage() {
               } else if (data.type === "error" || data.type === "pipeline_error") {
                 setIsTyping(false);
                 setIsResearching(false);
+                setActiveTool(null);
                 setMessages(prev => [...prev, {
                   id: Date.now().toString(),
                   role: "assistant",
@@ -469,6 +496,7 @@ export default function AgentsResearchPage() {
             isHistoryOpen={isHistoryOpen}
             setIsHistoryOpen={setIsHistoryOpen}
             onSend={handleSend}
+            activeTool={activeTool}
           />
         )}
       </div>
