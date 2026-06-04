@@ -78,28 +78,30 @@ async def stream_vietnam_macro_data(
         
     indicator_lower = indicator.lower()
     
+    date_context = f" tính đến thời điểm {curr_date}" if curr_date else " mới nhất"
+    
     # Định tuyến URL theo loại chỉ số
     if "cpi" in indicator_lower:
         url = "https://www.nso.gov.vn/gia"
-        query = "Lấy dữ liệu CPI mới nhất (theo tháng và theo năm)"
+        query = f"Lấy dữ liệu CPI{date_context} (theo tháng và theo năm). Nếu không thấy hoặc trang web lỗi, hãy tìm trên Google."
     elif "gdp" in indicator_lower or "fdi" in indicator_lower:
         url = "https://www.nso.gov.vn/en/statistical-data/"
-        query = f"Lấy dữ liệu {indicator.upper()} mới nhất"
+        query = f"Lấy dữ liệu {indicator.upper()}{date_context}. Nếu không thấy hoặc trang web lỗi, hãy tìm trên Google."
     elif "interest" in indicator_lower or "lãi suất" in indicator_lower:
         url = "https://www.sbv.gov.vn"
-        query = "Lấy dữ liệu Lãi suất điều hành (Tái cấp vốn, Tái chiết khấu) hoặc OMO mới nhất"
+        query = f"Lấy dữ liệu Lãi suất điều hành (Tái cấp vốn, Tái chiết khấu) hoặc OMO{date_context}. Nếu không thấy, hãy tìm trên Google."
     elif "exchange" in indicator_lower or "tỷ giá" in indicator_lower:
         url = "https://www.sbv.gov.vn"
-        query = "Lấy dữ liệu Tỷ giá trung tâm (USD/VND) mới nhất"
+        query = f"Lấy dữ liệu Tỷ giá trung tâm (USD/VND){date_context}. Nếu không thấy, hãy tìm trên Google."
     elif "pmi" in indicator_lower:
         url = "https://www.spglobal.com/marketintelligence/en/mi/products/pmi.html"
-        query = "Lấy dữ liệu PMI sản xuất của Việt Nam (S&P Global PMI Vietnam) mới nhất"
+        query = f"Lấy dữ liệu PMI sản xuất của Việt Nam (S&P Global PMI Vietnam){date_context}. Nếu không thấy, hãy tìm trên Google."
     elif "export" in indicator_lower or "import" in indicator_lower or "xuất nhập khẩu" in indicator_lower:
         url = "https://www.customs.gov.vn"
-        query = "Lấy dữ liệu kim ngạch Xuất nhập khẩu mới nhất"
+        query = f"Lấy dữ liệu kim ngạch Xuất nhập khẩu{date_context}. Nếu không thấy, hãy tìm trên Google."
     else:
         url = "https://www.google.com"
-        query = f"Tìm kiếm dữ liệu vĩ mô Việt Nam: {indicator}"
+        query = f"Tìm kiếm dữ liệu vĩ mô Việt Nam: {indicator}{date_context}. Hãy ưu tiên các nguồn uy tín như CafeF, VnEconomy, GSO."
 
     # Gọi tác vụ Agentic Web Browser
     async for event in stream_browser_research(query=query, start_url=url, config=config, browser_id=browser_id):

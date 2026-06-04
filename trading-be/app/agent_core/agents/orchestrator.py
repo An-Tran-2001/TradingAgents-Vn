@@ -1,4 +1,7 @@
 import os
+import sys
+import threading
+import asyncio
 import logging
 from typing import List, Dict, Any, Optional
 from langchain_core.messages import SystemMessage, HumanMessage, AIMessage, ToolMessage
@@ -304,21 +307,65 @@ class OrchestratorAgent:
                                     "args": tool_call["args"],
                                 }
                                 if tool_call["name"] == "get_vietnam_macro":
-                                    async for event in stream_vietnam_macro_data(
-                                        tool_call["args"]["indicator"],
-                                        tool_call["args"].get("curr_date"),
-                                        config={
-                                            "configurable": {
-                                                "provider": self.provider,
-                                                "model": self.model,
-                                                "api_key": self.api_key,
-                                            }
-                                        },
-                                    ):
-                                        if event["type"] == "orchestrator_tool_start":
-                                            yield event
-                                        elif event["type"] == "final_result":
-                                            result = event["content"]
+
+                                    config_dict = {
+                                        "configurable": {
+                                            "provider": self.provider,
+                                            "model": self.model,
+                                            "api_key": self.api_key,
+                                        }
+                                    }
+                                    
+                                    if sys.platform == "win32":
+                                        queue = asyncio.Queue()
+                                        main_loop = asyncio.get_running_loop()
+                                        
+                                        def run_in_thread(loop, q, indicator, curr_date, config):
+                                            new_loop = asyncio.ProactorEventLoop()
+                                            asyncio.set_event_loop(new_loop)
+                                            async def wrapper():
+                                                try:
+                                                    async for evt in stream_vietnam_macro_data(indicator, curr_date, config):
+                                                        loop.call_soon_threadsafe(q.put_nowait, evt)
+                                                except Exception as e:
+                                                    logger.error(f"Error in macro background thread: {e}")
+                                                finally:
+                                                    loop.call_soon_threadsafe(q.put_nowait, None)
+                                            try:
+                                                new_loop.run_until_complete(wrapper())
+                                            finally:
+                                                new_loop.close()
+                                                
+                                        thread = threading.Thread(
+                                            target=run_in_thread,
+                                            args=(
+                                                main_loop,
+                                                queue,
+                                                tool_call["args"]["indicator"],
+                                                tool_call["args"].get("curr_date"),
+                                                config_dict
+                                            )
+                                        )
+                                        thread.start()
+                                        
+                                        while True:
+                                            event = await queue.get()
+                                            if event is None:
+                                                break
+                                            if event["type"] == "orchestrator_tool_start":
+                                                yield event
+                                            elif event["type"] == "final_result":
+                                                result = event["content"]
+                                    else:
+                                        async for event in stream_vietnam_macro_data(
+                                            tool_call["args"]["indicator"],
+                                            tool_call["args"].get("curr_date"),
+                                            config=config_dict,
+                                        ):
+                                            if event["type"] == "orchestrator_tool_start":
+                                                yield event
+                                            elif event["type"] == "final_result":
+                                                result = event["content"]
                                 else:
                                     # Call using ainvoke. LangChain handles both sync and async tools automatically
                                     result = await tool_func.ainvoke(

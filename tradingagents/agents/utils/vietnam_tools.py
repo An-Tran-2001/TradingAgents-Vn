@@ -1,3 +1,4 @@
+import sys
 from langchain_core.tools import tool
 from typing import Annotated
 from tradingagents.dataflows.vn_vendor import (
@@ -26,13 +27,14 @@ def get_vietnam_macro(
     config: RunnableConfig = None,
 ) -> str:
     """
-    Retrieve Vietnam macroeconomic data (CPI, GDP, Interest Rate, Exchange Rate, etc.)
-    Uses sources like SBV, GSO, or WiGroup.
+    Retrieve Vietnam macroeconomic data (CPI, GDP, Interest Rate, Exchange Rate, FDI, PMI, etc.).
+    Uses a Browser Agent to navigate official sources like SBV, GSO, Customs.
+    If the official source lacks data or is unresponsive, the Agent will automatically fallback to searching Google (e.g., CafeF, VnEconomy, GSO).
     Args:
-        indicator (str): The macroeconomic indicator to fetch.
+        indicator (str): The macroeconomic indicator to fetch. Be specific if needed (e.g., 'CPI tháng 5 năm 2024').
         curr_date (str): Current trading date in yyyy-mm-dd format.
     Returns:
-        str: Formatted macro data report.
+        str: Formatted macro data report with exact numbers and source URL.
     """
 
     async def _run():
@@ -82,7 +84,12 @@ def get_vietnam_macro(
     # If two threads share the same event loop via asyncio.get_event_loop(),
     # concurrent run_until_complete() calls will crash silently, causing
     # only the first tool call to succeed.
-    new_loop = asyncio.new_event_loop()
+    if sys.platform == 'win32':
+        new_loop = asyncio.ProactorEventLoop()
+    else:
+        new_loop = asyncio.new_event_loop()
+        
+    asyncio.set_event_loop(new_loop)
     try:
         return new_loop.run_until_complete(_run())
     finally:
