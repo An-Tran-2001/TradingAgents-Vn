@@ -14,6 +14,7 @@ from tradingagents.dataflows.vn_vendor import (
 from langchain_core.runnables import RunnableConfig
 from tradingagents.dataflows.vn_vendor import stream_vietnam_macro_data
 import asyncio
+import uuid
 
 
 @tool
@@ -36,26 +37,56 @@ def get_vietnam_macro(
 
     async def _run():
         final_res = "No data"
-        async for event in stream_vietnam_macro_data(indicator, curr_date, config):
-            if event["type"] == "final_result":
-                final_res = event["content"]
+        browser_id = str(uuid.uuid4())[:8]
+        queue = config.get("configurable", {}).get("stream_queue") if config else None
+        main_loop = config.get("configurable", {}).get("loop") if config else None
+        
+        if queue and main_loop:
+            main_loop.call_soon_threadsafe(queue.put_nowait, {
+                "type": "orchestrator_tool_start",
+                "tool": "get_vietnam_macro",
+                "args": {"indicator": indicator, "curr_date": curr_date},
+                "browser_id": browser_id
+            })
+
+        try:
+            async for event in stream_vietnam_macro_data(indicator, curr_date, config, browser_id=browser_id):
+                if event["type"] == "final_result":
+                    final_res = event["content"]
+                elif queue and main_loop:
+                    main_loop.call_soon_threadsafe(queue.put_nowait, event)
+        except Exception as e:
+            final_res = f"Lỗi trong quá trình lấy dữ liệu vĩ mô: {str(e)}"
+            if queue and main_loop:
+                main_loop.call_soon_threadsafe(queue.put_nowait, {
+                    "type": "agent_log",
+                    "step": 0,
+                    "agent": "System",
+                    "log_type": "Tool",
+                    "content": final_res,
+                    "time": "now"
+                })
+        finally:
+            if queue and main_loop:
+                main_loop.call_soon_threadsafe(queue.put_nowait, {
+                    "type": "orchestrator_tool_end",
+                    "tool": "get_vietnam_macro",
+                    "result": "Success",
+                    "browser_id": browser_id
+                })
+            
         return final_res
 
+    # CRITICAL: Always create a NEW event loop for each invocation.
+    # LangGraph's ToolNode runs parallel tool calls in separate threads.
+    # If two threads share the same event loop via asyncio.get_event_loop(),
+    # concurrent run_until_complete() calls will crash silently, causing
+    # only the first tool call to succeed.
+    new_loop = asyncio.new_event_loop()
     try:
-        loop = asyncio.get_event_loop()
-    except RuntimeError:
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-
-    if loop.is_running():
-        try:
-            import nest_asyncio
-
-            nest_asyncio.apply()
-        except ImportError:
-            pass
-
-    return loop.run_until_complete(_run())
+        return new_loop.run_until_complete(_run())
+    finally:
+        new_loop.close()
 
 
 @tool

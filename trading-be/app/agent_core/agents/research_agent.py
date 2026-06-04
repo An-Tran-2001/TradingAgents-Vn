@@ -383,6 +383,8 @@ class ResearchAgentRunner:
 
         # Run stream in an executor and queue events
         queue = asyncio.Queue()
+        args.setdefault("config", {}).setdefault("configurable", {})["stream_queue"] = queue
+        args.setdefault("config", {}).setdefault("configurable", {})["loop"] = loop
 
         def stream_worker():
             try:
@@ -741,7 +743,7 @@ If numerical price fields (price, low, high) for the forecast are not explicitly
             elif event["type"] == "error":
                 yield {"type": "pipeline_error", "content": event["message"]}
                 break
-            elif event["type"] in ["text_chunk", "agent_log_chunk"]:
+            elif event["type"] in ["text_chunk", "agent_log_chunk", "orchestrator_tool_start", "orchestrator_tool_end"]:
                 if event["type"] == "agent_log_chunk":
                     # Save to MongoDB so it can be viewed later
                     log_entry = AgentLog(
