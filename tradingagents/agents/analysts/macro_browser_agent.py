@@ -14,12 +14,16 @@ logger = logging.getLogger(__name__)
 
 
 async def stream_browser_research(
-    query: str, start_url: str = "https://www.google.com", config: dict = None
+    query: str, start_url: str = "https://www.google.com", config: dict = None, browser_id: str = None
 ):
     """
     Spins up a headless browser, creates a LangGraph ReAct Agent with Playwright tools,
     and commands the agent to navigate the website to find the requested data.
     """
+    if not browser_id:
+        import uuid
+        browser_id = str(uuid.uuid4())[:8]
+
     try:
         from langchain_community.agent_toolkits.playwright.toolkit import (
             PlayWrightBrowserToolkit,
@@ -217,6 +221,7 @@ Focus on finding macroeconomic data like CPI, GDP, Interest Rates, PMI, or FDI. 
                             "type": "orchestrator_tool_start",
                             "tool": f"browser_{tc['name']}",
                             "args": tc["args"],
+                            "browser_id": browser_id
                         }
                 else:
                     final_output = message.content

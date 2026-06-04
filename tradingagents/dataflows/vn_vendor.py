@@ -66,7 +66,8 @@ def get_tcbs_stock_data(
 async def stream_vietnam_macro_data(
     indicator: Annotated[str, "Tên chỉ số vĩ mô (cpi, gdp, interest_rate, exchange_rate)"],
     curr_date: Annotated[str, "Ngày hiện tại yyyy-mm-dd"] = None,
-    config: dict = None
+    config: dict = None,
+    browser_id: str = None
 ):
     """Sử dụng Browser Agent (Playwright) để tự động crawl và lấy dữ liệu vĩ mô Việt Nam."""
     try:
@@ -101,7 +102,7 @@ async def stream_vietnam_macro_data(
         query = f"Tìm kiếm dữ liệu vĩ mô Việt Nam: {indicator}"
 
     # Gọi tác vụ Agentic Web Browser
-    async for event in stream_browser_research(query=query, start_url=url, config=config):
+    async for event in stream_browser_research(query=query, start_url=url, config=config, browser_id=browser_id):
         if event["type"] == "final_result":
             event["content"] = f"# Macro Data: {indicator}\nNguồn tự động: Browser Agent\nKết quả:\n{event['content']}"
         yield event

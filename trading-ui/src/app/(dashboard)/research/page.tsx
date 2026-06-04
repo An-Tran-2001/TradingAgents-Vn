@@ -56,6 +56,8 @@ export default function AgentsResearchPage() {
   const [activeTool, setActiveTool] = useState<string | null>(null)
   const [activeToolArgs, setActiveToolArgs] = useState<any>(null)
   const [currentBrowserUrl, setCurrentBrowserUrl] = useState<string | null>(null)
+  const [activeBrowsers, setActiveBrowsers] = useState<Record<string, { tool: string, args: any, url: string, timestamp?: number }>>({})
+
   
   // History Sidebar State
   const [isHistoryOpen, setIsHistoryOpen] = useState(false)
@@ -160,9 +162,31 @@ export default function AgentsResearchPage() {
     setLogs([]);
     setLogAnimationStep(0);
     setIsHistoryOpen(false);
+    setActiveBrowsers({});
   }, []);
 
-  // No mock timer needed anymore
+  // Timeout to auto-close stuck browsers
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setActiveBrowsers(prev => {
+        const now = Date.now();
+        let changed = false;
+        const next = { ...prev };
+        for (const [id, b] of Object.entries(next)) {
+           if (!b.timestamp) {
+             b.timestamp = now;
+             changed = true;
+           } else if (now - b.timestamp > 120000) { // 2 minutes timeout
+             delete next[id];
+             changed = true;
+             console.log(`Auto-closed stuck browser ${id}`);
+           }
+        }
+        return changed ? next : prev;
+      });
+    }, 5000);
+    return () => clearInterval(timer);
+  }, []);
 
   const handleSend = async (text: string, suggestedTicker?: string) => {
     if (!text.trim()) return
@@ -182,6 +206,7 @@ export default function AgentsResearchPage() {
     setActiveTool(null)
     setActiveToolArgs(null)
     setCurrentBrowserUrl(null)
+    setActiveBrowsers({})
     setIsResearching(false)
     setIsViewingLogs(false)
     setIsCliExpanded(false)
@@ -295,6 +320,7 @@ export default function AgentsResearchPage() {
                 setActiveTool(null);
                 setActiveToolArgs(null);
                 setCurrentBrowserUrl(null);
+                setActiveBrowsers({});
               } else if (data.type === "text") {
                 // Fallback for older non-streaming API events
                 setMessages(prev => [...prev, {
@@ -310,6 +336,7 @@ export default function AgentsResearchPage() {
                 setActiveTool(null);
                 setActiveToolArgs(null);
                 setCurrentBrowserUrl(null);
+                setActiveBrowsers({});
                 setMessages(prev => [...prev, {
                   id: Date.now().toString(),
                   role: "assistant",
@@ -317,11 +344,24 @@ export default function AgentsResearchPage() {
                   timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
                 }]);
               } else if (data.type === "orchestrator_tool_start") {
+                const browserId = data.browser_id || "default";
                 setActiveTool(data.tool);
                 setActiveToolArgs(data.args);
                 
                 if (data.tool.startsWith("browser_") && data.args?.url) {
                    setCurrentBrowserUrl(data.args.url);
+                }
+                
+                if (data.tool.startsWith("browser_") || data.tool === "get_vietnam_macro") {
+                   setActiveBrowsers(prev => ({
+                     ...prev,
+                     [browserId]: {
+                       tool: data.tool,
+                       args: data.args,
+                       url: data.args?.url || data.args?.query || prev[browserId]?.url || "https://secure-research.agent...",
+                       timestamp: Date.now()
+                     }
+                   }));
                 }
                 
                 let contentText = `**Orchestrator Action**: Calling tool \`${data.tool}\` with args: \`${JSON.stringify(data.args)}\``;
@@ -343,8 +383,16 @@ export default function AgentsResearchPage() {
                 };
                 setLogs(prev => [...prev, newLog]);
               } else if (data.type === "orchestrator_tool_end") {
+                const browserId = data.browser_id || "default";
                 setActiveTool(null);
                 setActiveToolArgs(null);
+                if (data.tool.startsWith("browser_") || data.tool === "get_vietnam_macro") {
+                   setActiveBrowsers(prev => {
+                     const next = { ...prev };
+                     delete next[browserId];
+                     return next;
+                   });
+                }
                 // We keep currentBrowserUrl so the iframe doesn't disappear immediately if another browser tool fires right after
                 const snippet = data.result && data.result.length > 120 ? data.result.slice(0, 117) + "..." : data.result;
                 const newLog: AgentLog = {
@@ -401,6 +449,7 @@ export default function AgentsResearchPage() {
                 setIsResearching(false);
                 setActiveTool(null);
                 setActiveToolArgs(null);
+                setActiveBrowsers({});
                 setMessages(prev => [...prev, {
                   id: Date.now().toString(),
                   role: "assistant",
@@ -493,6 +542,7 @@ export default function AgentsResearchPage() {
                 logAnimationStep={logAnimationStep} 
                 activeTool={activeTool} 
                 activeToolArgs={activeToolArgs} 
+                activeBrowsers={activeBrowsers}
               />
             )}
 
@@ -508,6 +558,7 @@ export default function AgentsResearchPage() {
               activeTool={activeTool}
               activeToolArgs={activeToolArgs}
               currentBrowserUrl={currentBrowserUrl}
+              activeBrowsers={activeBrowsers}
             />
           </div>
         ) : (
