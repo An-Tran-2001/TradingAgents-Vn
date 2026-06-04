@@ -54,6 +54,8 @@ export default function AgentsResearchPage() {
   const [logAnimationStep, setLogAnimationStep] = useState(0)
   const [activeLogTab, setActiveLogTab] = useState<string>("All")
   const [activeTool, setActiveTool] = useState<string | null>(null)
+  const [activeToolArgs, setActiveToolArgs] = useState<any>(null)
+  const [currentBrowserUrl, setCurrentBrowserUrl] = useState<string | null>(null)
   
   // History Sidebar State
   const [isHistoryOpen, setIsHistoryOpen] = useState(false)
@@ -178,6 +180,8 @@ export default function AgentsResearchPage() {
     setMessages((prev) => [...prev, newMsg])
     setIsTyping(true)
     setActiveTool(null)
+    setActiveToolArgs(null)
+    setCurrentBrowserUrl(null)
     setIsResearching(false)
     setIsViewingLogs(false)
     setIsCliExpanded(false)
@@ -289,6 +293,8 @@ export default function AgentsResearchPage() {
               } else if (data.type === "done") {
                 setIsTyping(false); // Safety fallback
                 setActiveTool(null);
+                setActiveToolArgs(null);
+                setCurrentBrowserUrl(null);
               } else if (data.type === "text") {
                 // Fallback for older non-streaming API events
                 setMessages(prev => [...prev, {
@@ -302,6 +308,8 @@ export default function AgentsResearchPage() {
               } else if (data.type === "handoff") {
                 setIsResearching(true);
                 setActiveTool(null);
+                setActiveToolArgs(null);
+                setCurrentBrowserUrl(null);
                 setMessages(prev => [...prev, {
                   id: Date.now().toString(),
                   role: "assistant",
@@ -310,16 +318,34 @@ export default function AgentsResearchPage() {
                 }]);
               } else if (data.type === "orchestrator_tool_start") {
                 setActiveTool(data.tool);
+                setActiveToolArgs(data.args);
+                
+                if (data.tool.startsWith("browser_") && data.args?.url) {
+                   setCurrentBrowserUrl(data.args.url);
+                }
+                
+                let contentText = `**Orchestrator Action**: Calling tool \`${data.tool}\` with args: \`${JSON.stringify(data.args)}\``;
+                let agentLabel = "System";
+                
+                if (data.tool.startsWith("browser_")) {
+                    agentLabel = "Browser Agent";
+                    const actionName = data.tool.replace("browser_", "").replace(/_/g, " ");
+                    const url = data.args?.url || data.args?.query || "";
+                    contentText = `**Web Action**: Executing \`${actionName}\` ${url ? `on [${url}]` : ''}`;
+                }
+                
                 const newLog: AgentLog = {
                   step: 0,
                   time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-                  agent: "System",
+                  agent: agentLabel,
                   type: "Action",
-                  content: `**Orchestrator Action**: Calling tool \`${data.tool}\` with args: \`${JSON.stringify(data.args)}\``
+                  content: contentText
                 };
                 setLogs(prev => [...prev, newLog]);
               } else if (data.type === "orchestrator_tool_end") {
                 setActiveTool(null);
+                setActiveToolArgs(null);
+                // We keep currentBrowserUrl so the iframe doesn't disappear immediately if another browser tool fires right after
                 const snippet = data.result && data.result.length > 120 ? data.result.slice(0, 117) + "..." : data.result;
                 const newLog: AgentLog = {
                   step: 0,
@@ -374,6 +400,7 @@ export default function AgentsResearchPage() {
                 setIsTyping(false);
                 setIsResearching(false);
                 setActiveTool(null);
+                setActiveToolArgs(null);
                 setMessages(prev => [...prev, {
                   id: Date.now().toString(),
                   role: "assistant",
@@ -461,7 +488,13 @@ export default function AgentsResearchPage() {
               </div>
             )}
             {/* TOP HALF: Fantasy Pipeline Visualization */}
-            {!isCliExpanded && <PipelineVisualization logAnimationStep={logAnimationStep} />}
+            {!isCliExpanded && (
+              <PipelineVisualization 
+                logAnimationStep={logAnimationStep} 
+                activeTool={activeTool} 
+                activeToolArgs={activeToolArgs} 
+              />
+            )}
 
             {/* BOTTOM HALF: CLI-STYLE LOG VIEWER */}
             <CliLogViewer 
@@ -472,6 +505,9 @@ export default function AgentsResearchPage() {
               isTyping={isTyping}
               isExpanded={isCliExpanded}
               onToggleExpand={() => setIsCliExpanded(!isCliExpanded)}
+              activeTool={activeTool}
+              activeToolArgs={activeToolArgs}
+              currentBrowserUrl={currentBrowserUrl}
             />
           </div>
         ) : (
@@ -482,6 +518,8 @@ export default function AgentsResearchPage() {
             setIsHistoryOpen={setIsHistoryOpen}
             onSend={handleSend}
             activeTool={activeTool}
+            activeToolArgs={activeToolArgs}
+            currentBrowserUrl={currentBrowserUrl}
           />
         )}
       </div>

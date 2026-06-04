@@ -13,6 +13,7 @@ from app.agent_core.tools import (
     scrape_links,
     query_past_report,
 )
+from tradingagents.dataflows.vn_vendor import stream_vietnam_macro_data
 from tradingagents.agents.utils.vietnam_tools import (
     get_vn_major_shareholders,
     get_vn_etf_flow,
@@ -22,7 +23,7 @@ from tradingagents.agents.utils.vietnam_tools import (
     get_vn_market_news,
     get_vietnam_macro,
     get_vn_official_announcements,
-    get_vn_realtime_trading_data_tool
+    get_vn_realtime_trading_data_tool,
 )
 from langsmith import traceable
 import langsmith
@@ -97,7 +98,7 @@ class OrchestratorAgent:
                 get_vn_market_news,
                 get_vietnam_macro,
                 get_vn_official_announcements,
-                get_vn_realtime_trading_data_tool
+                get_vn_realtime_trading_data_tool,
             ]
 
             if self.websearch:
@@ -258,7 +259,7 @@ class OrchestratorAgent:
                                         "model": self.model,
                                         "api_key": self.api_key,
                                     }
-                                }
+                                },
                             )
                             messages.append(
                                 ToolMessage(
@@ -288,10 +289,13 @@ class OrchestratorAgent:
                             if hasattr(t, "name") and t.name == tool_call["name"]:
                                 tool_func = t
                                 break
-                            elif isinstance(t, dict) and t.get("type") == tool_call["name"]:
+                            elif (
+                                isinstance(t, dict)
+                                and t.get("type") == tool_call["name"]
+                            ):
                                 tool_func = t
                                 break
-                                
+
                         if tool_func:
                             try:
                                 yield {
@@ -299,13 +303,35 @@ class OrchestratorAgent:
                                     "tool": tool_call["name"],
                                     "args": tool_call["args"],
                                 }
-                                # Call async or sync
-                                import asyncio
-                                if asyncio.iscoroutinefunction(tool_func.invoke):
-                                    result = await tool_func.ainvoke(tool_call["args"])
+                                if tool_call["name"] == "get_vietnam_macro":
+                                    async for event in stream_vietnam_macro_data(
+                                        tool_call["args"]["indicator"],
+                                        tool_call["args"].get("curr_date"),
+                                        config={
+                                            "configurable": {
+                                                "provider": self.provider,
+                                                "model": self.model,
+                                                "api_key": self.api_key,
+                                            }
+                                        },
+                                    ):
+                                        if event["type"] == "orchestrator_tool_start":
+                                            yield event
+                                        elif event["type"] == "final_result":
+                                            result = event["content"]
                                 else:
-                                    result = tool_func.invoke(tool_call["args"])
-                                    
+                                    # Call using ainvoke. LangChain handles both sync and async tools automatically
+                                    result = await tool_func.ainvoke(
+                                        tool_call["args"],
+                                        config={
+                                            "configurable": {
+                                                "provider": self.provider,
+                                                "model": self.model,
+                                                "api_key": self.api_key,
+                                            }
+                                        },
+                                    )
+
                                 messages.append(
                                     ToolMessage(
                                         tool_call_id=tool_call["id"],
@@ -319,7 +345,9 @@ class OrchestratorAgent:
                                     "result": str(result),
                                 }
                             except Exception as e:
-                                logger.error(f"Failed to process {tool_call['name']}: {e}")
+                                logger.error(
+                                    f"Failed to process {tool_call['name']}: {e}"
+                                )
                                 messages.append(
                                     ToolMessage(
                                         tool_call_id=tool_call["id"],

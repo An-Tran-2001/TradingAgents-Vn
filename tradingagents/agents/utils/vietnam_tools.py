@@ -1,9 +1,7 @@
 from langchain_core.tools import tool
 from typing import Annotated
-from tradingagents.dataflows.interface import route_to_vendor
 from tradingagents.dataflows.vn_vendor import (
     get_tcbs_stock_data,
-    get_vietnam_macro_data,
     get_cafef_news,
     get_hose_announcements,
     get_major_shareholders,
@@ -11,13 +9,20 @@ from tradingagents.dataflows.vn_vendor import (
     get_sector_data,
     get_market_breadth,
     get_social_sentiment,
-    get_vn_realtime_trading_data
+    get_vn_realtime_trading_data,
 )
+from langchain_core.runnables import RunnableConfig
+from tradingagents.dataflows.vn_vendor import stream_vietnam_macro_data
+import asyncio
+
 
 @tool
 def get_vietnam_macro(
-    indicator: Annotated[str, "Tên chỉ số vĩ mô (cpi, gdp, interest_rate, exchange_rate)"],
-    curr_date: Annotated[str, "Ngày hiện tại yyyy-mm-dd"] = None
+    indicator: Annotated[
+        str, "Tên chỉ số vĩ mô (cpi, gdp, interest_rate, exchange_rate)"
+    ],
+    curr_date: Annotated[str, "Ngày hiện tại yyyy-mm-dd"] = None,
+    config: RunnableConfig = None,
 ) -> str:
     """
     Retrieve Vietnam macroeconomic data (CPI, GDP, Interest Rate, Exchange Rate, etc.)
@@ -28,7 +33,30 @@ def get_vietnam_macro(
     Returns:
         str: Formatted macro data report.
     """
-    return get_vietnam_macro_data(indicator, curr_date)
+
+    async def _run():
+        final_res = "No data"
+        async for event in stream_vietnam_macro_data(indicator, curr_date, config):
+            if event["type"] == "final_result":
+                final_res = event["content"]
+        return final_res
+
+    try:
+        loop = asyncio.get_event_loop()
+    except RuntimeError:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+
+    if loop.is_running():
+        try:
+            import nest_asyncio
+
+            nest_asyncio.apply()
+        except ImportError:
+            pass
+
+    return loop.run_until_complete(_run())
+
 
 @tool
 def get_vn_market_news(
@@ -42,6 +70,7 @@ def get_vn_market_news(
         str: Formatted news report.
     """
     return get_cafef_news(symbol)
+
 
 @tool
 def get_vn_official_announcements(
@@ -57,6 +86,7 @@ def get_vn_official_announcements(
     """
     return get_hose_announcements(symbol)
 
+
 @tool
 def get_vn_major_shareholders(
     symbol: Annotated[str, "Mã chứng khoán (Ticker symbol)"],
@@ -70,6 +100,7 @@ def get_vn_major_shareholders(
     """
     return get_major_shareholders(symbol)
 
+
 @tool
 def get_vn_etf_flow() -> str:
     """
@@ -78,6 +109,7 @@ def get_vn_etf_flow() -> str:
         str: ETF flow report from HOSE/VSDC.
     """
     return get_etf_flow()
+
 
 @tool
 def get_vn_sector_data(
@@ -92,6 +124,7 @@ def get_vn_sector_data(
     """
     return get_sector_data(symbol)
 
+
 @tool
 def get_vn_market_breadth() -> str:
     """
@@ -100,6 +133,7 @@ def get_vn_market_breadth() -> str:
         str: Market breadth report from TCBS/WiFeed.
     """
     return get_market_breadth()
+
 
 @tool
 def get_vn_social_sentiment(
@@ -114,6 +148,7 @@ def get_vn_social_sentiment(
     """
     return get_social_sentiment(symbol)
 
+
 @tool
 def get_vn_realtime_trading_data_tool(
     symbol: Annotated[str, "Mã chứng khoán (Ticker symbol)"],
@@ -126,4 +161,3 @@ def get_vn_realtime_trading_data_tool(
         str: Real-time trading data report.
     """
     return get_vn_realtime_trading_data(symbol)
-

@@ -63,12 +63,48 @@ def get_tcbs_stock_data(
         raise NoMarketDataError(symbol, canonical, f"TCBS API Error: {str(e)}")
 
 
-def get_vietnam_macro_data(
+async def stream_vietnam_macro_data(
     indicator: Annotated[str, "Tên chỉ số vĩ mô (cpi, gdp, interest_rate, exchange_rate)"],
-    curr_date: Annotated[str, "Ngày hiện tại yyyy-mm-dd"] = None
+    curr_date: Annotated[str, "Ngày hiện tại yyyy-mm-dd"] = None,
+    config: dict = None
 ):
-    """Mock lấy dữ liệu vĩ mô Việt Nam từ WiGroup/SBV."""
-    return f"# Macro Data: {indicator}\nNguồn: SBV / Tổng cục Thống kê (Mock data cho {indicator})"
+    """Sử dụng Browser Agent (Playwright) để tự động crawl và lấy dữ liệu vĩ mô Việt Nam."""
+    try:
+        from tradingagents.agents.analysts.macro_browser_agent import stream_browser_research
+    except ImportError:
+        yield {"type": "final_result", "content": f"# Macro Data: {indicator}\nLỗi: Không thể tải MacroBrowserAgent. Đảm bảo file được tạo đúng."}
+        return
+        
+    indicator_lower = indicator.lower()
+    
+    # Định tuyến URL theo loại chỉ số
+    if "cpi" in indicator_lower:
+        url = "https://www.nso.gov.vn/gia"
+        query = "Lấy dữ liệu CPI mới nhất (theo tháng và theo năm)"
+    elif "gdp" in indicator_lower or "fdi" in indicator_lower:
+        url = "https://www.nso.gov.vn/en/statistical-data/"
+        query = f"Lấy dữ liệu {indicator.upper()} mới nhất"
+    elif "interest" in indicator_lower or "lãi suất" in indicator_lower:
+        url = "https://www.sbv.gov.vn"
+        query = "Lấy dữ liệu Lãi suất điều hành (Tái cấp vốn, Tái chiết khấu) hoặc OMO mới nhất"
+    elif "exchange" in indicator_lower or "tỷ giá" in indicator_lower:
+        url = "https://www.sbv.gov.vn"
+        query = "Lấy dữ liệu Tỷ giá trung tâm (USD/VND) mới nhất"
+    elif "pmi" in indicator_lower:
+        url = "https://www.spglobal.com/marketintelligence/en/mi/products/pmi.html"
+        query = "Lấy dữ liệu PMI sản xuất của Việt Nam (S&P Global PMI Vietnam) mới nhất"
+    elif "export" in indicator_lower or "import" in indicator_lower or "xuất nhập khẩu" in indicator_lower:
+        url = "https://www.customs.gov.vn"
+        query = "Lấy dữ liệu kim ngạch Xuất nhập khẩu mới nhất"
+    else:
+        url = "https://www.google.com"
+        query = f"Tìm kiếm dữ liệu vĩ mô Việt Nam: {indicator}"
+
+    # Gọi tác vụ Agentic Web Browser
+    async for event in stream_browser_research(query=query, start_url=url, config=config):
+        if event["type"] == "final_result":
+            event["content"] = f"# Macro Data: {indicator}\nNguồn tự động: Browser Agent\nKết quả:\n{event['content']}"
+        yield event
 
 
 def get_cafef_news(
