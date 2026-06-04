@@ -77,21 +77,16 @@ def get_vietnam_macro(
             
         return final_res
 
+    # CRITICAL: Always create a NEW event loop for each invocation.
+    # LangGraph's ToolNode runs parallel tool calls in separate threads.
+    # If two threads share the same event loop via asyncio.get_event_loop(),
+    # concurrent run_until_complete() calls will crash silently, causing
+    # only the first tool call to succeed.
+    new_loop = asyncio.new_event_loop()
     try:
-        loop = asyncio.get_event_loop()
-    except RuntimeError:
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-
-    if loop.is_running():
-        try:
-            import nest_asyncio
-
-            nest_asyncio.apply()
-        except ImportError:
-            pass
-
-    return loop.run_until_complete(_run())
+        return new_loop.run_until_complete(_run())
+    finally:
+        new_loop.close()
 
 
 @tool
