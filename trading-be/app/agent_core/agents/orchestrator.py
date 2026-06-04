@@ -44,6 +44,7 @@ class OrchestratorAgent:
         self.websearch = websearch
         self.provider = provider
         self.model = model
+        self.api_key = api_key
         try:
             client_kwargs = {
                 "provider": provider,
@@ -256,7 +257,16 @@ class OrchestratorAgent:
                                 "tool": "search_web",
                                 "args": tool_call["args"],
                             }
-                            result = search_web.invoke(tool_call["args"])
+                            result = search_web.invoke(
+                                tool_call["args"],
+                                config={
+                                    "configurable": {
+                                        "provider": self.provider,
+                                        "model": self.model,
+                                        "api_key": self.api_key,
+                                    }
+                                }
+                            )
                             messages.append(
                                 ToolMessage(
                                     tool_call_id=tool_call["id"],

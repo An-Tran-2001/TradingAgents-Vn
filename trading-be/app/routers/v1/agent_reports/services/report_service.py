@@ -73,3 +73,9 @@ class ReportService:
         # Sort logs by timestamp ascending to simulate execution order
         result.sort(key=lambda x: x.timestamp)
         return result
+
+    async def delete_report(self, report_id: int) -> bool:
+        return await self.repo.archive_report(report_id)
+
+    async def delete_ticker_reports(self, ticker: str) -> int:
+        return await self.repo.archive_ticker(ticker)

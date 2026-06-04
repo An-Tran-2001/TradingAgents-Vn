@@ -11,8 +11,8 @@ class ReportRepository:
         self.db = db
 
     async def get_tickers_with_reports(self) -> List[str]:
-        # Get unique tickers
-        stmt = select(Report.ticker).distinct().order_by(Report.ticker)
+        # Get unique tickers, excluding archived reports
+        stmt = select(Report.ticker).where(Report.status != "archived").distinct().order_by(Report.ticker)
         result = await self.db.execute(stmt)
         return [row[0] for row in result.all()]
 
@@ -23,6 +23,7 @@ class ReportRepository:
                 func.count(Report.id).label("report_count"),
                 func.max(Report.report_date).label("latest_report_date")
             )
+            .where(Report.status != "archived")
             .group_by(Report.ticker)
             .order_by(desc("latest_report_date"))
         )
@@ -35,6 +36,7 @@ class ReportRepository:
             select(Report)
             .options(selectinload(Report.agent_outputs), selectinload(Report.forecasts))
             .where(Report.ticker == ticker)
+            .where(Report.status != "archived")
             .order_by(desc(Report.report_date))
         )
         result = await self.db.execute(stmt)
@@ -48,3 +50,20 @@ class ReportRepository:
         )
         result = await self.db.execute(stmt)
         return result.scalars().first()
+
+    async def archive_report(self, report_id: int) -> bool:
+        stmt = select(Report).where(Report.id == report_id)
+        result = await self.db.execute(stmt)
+        report = result.scalars().first()
+        if report:
+            report.status = "archived"
+            await self.db.commit()
+            return True
+        return False
+
+    async def archive_ticker(self, ticker: str) -> int:
+        from sqlalchemy import update
+        stmt = update(Report).where(Report.ticker == ticker).values(status="archived")
+        result = await self.db.execute(stmt)
+        await self.db.commit()
+        return result.rowcount

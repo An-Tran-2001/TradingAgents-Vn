@@ -13,13 +13,17 @@ import {
   Terminal,
   ChevronRight,
   Sparkles,
-  Database
+  Database,
+  Activity,
+  TrendingUp,
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import Link from "next/link"
 import { useLanguage } from "@/contexts/language-context"
+import { useAuthStore } from "@/store/authStore"
 
 // Steps mapping for Workflow Diagram (translated dynamically)
 const WORKFLOW_STEPS = [
@@ -58,9 +62,29 @@ const WORKFLOW_STEPS = [
   }
 ]
 
+function getInitials(email: string): string {
+  const parts = email.split("@")[0].split(/[._-]/)
+  if (parts.length >= 2) {
+    return (parts[0][0] + parts[1][0]).toUpperCase()
+  }
+  return email.substring(0, 2).toUpperCase()
+}
+
+function getGreeting(): string {
+  const hour = new Date().getHours()
+  if (hour < 12) return "Chào buổi sáng"
+  if (hour < 18) return "Chào buổi chiều"
+  return "Chào buổi tối"
+}
+
 export default function HomeIntroPage() {
   const [activeStep, setActiveStep] = useState<string>("data")
   const { t } = useLanguage()
+  const { user } = useAuthStore()
+
+  const displayName = user?.email?.split("@")[0] ?? "Trader"
+  const initials = user?.email ? getInitials(user.email) : "T"
+  const greeting = getGreeting()
 
   return (
     <div className="flex h-full w-full flex-col overflow-y-auto custom-scrollbar p-6 bg-background/30 relative">
@@ -71,6 +95,38 @@ export default function HomeIntroPage() {
         <div className="relative overflow-hidden rounded-2xl border border-primary/20 bg-card/20 backdrop-blur-md p-8 md:p-12 shadow-[inset_0_0_30px_rgba(0,240,255,0.05)]">
           <div className="absolute top-0 right-0 w-96 h-96 bg-primary/10 rounded-full blur-[120px] pointer-events-none" />
           
+          {/* User Greeting Card */}
+          <div className="flex items-start justify-between mb-6">
+            <div className="flex items-center gap-4">
+              <div className="relative">
+                <Avatar className="h-14 w-14 ring-2 ring-primary/30 ring-offset-2 ring-offset-background">
+                  <AvatarFallback className="bg-gradient-to-br from-primary/80 to-cyan-600 text-background font-black text-lg">
+                    {initials}
+                  </AvatarFallback>
+                </Avatar>
+                <span className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-emerald-400 rounded-full border-2 border-background" title="Online" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground font-medium">{greeting},</p>
+                <h2 className="text-xl font-black text-foreground tracking-tight capitalize">{displayName} 👋</h2>
+                {user?.email && (
+                  <p className="text-xs text-muted-foreground/70 font-mono mt-0.5">{user.email}</p>
+                )}
+              </div>
+            </div>
+
+            <div className="hidden md:flex items-center gap-2">
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-medium">
+                <Activity className="w-3 h-3 animate-pulse" />
+                System Online
+              </div>
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-medium">
+                <TrendingUp className="w-3 h-3" />
+                AI Ready
+              </div>
+            </div>
+          </div>
+
           <div className="max-w-2xl space-y-4">
             <Badge variant="outline" className="border-primary/40 text-primary bg-primary/5 px-3 py-1 font-mono tracking-wider">
               <Sparkles className="w-3.5 h-3.5 mr-1.5 animate-spin" /> {t("home.badge")}

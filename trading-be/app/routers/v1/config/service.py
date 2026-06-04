@@ -361,6 +361,110 @@ class ConfigService:
                 # Log or print warning, fall back to static list below
                 pass
 
+        elif provider_lower == "openrouter":
+            # OpenRouter cho phép list models công khai (không cần key).
+            # Nếu có API key -> thêm Authorization header (để thấy model private/org)
+            # và validate key tại /api/v1/auth/key để update is_ready.
+            api_key = (
+                user_api_keys.get("openrouter")
+                or os.getenv("OPENROUTER_API_KEY")
+            )
+            try:
+                import httpx
+                headers: dict = {
+                    "HTTP-Referer": "https://tradingagents.ai",
+                    "X-Title": "TradingAgents",
+                }
+                if api_key:
+                    headers["Authorization"] = f"Bearer {api_key}"
+
+                async with httpx.AsyncClient(timeout=15.0) as client:
+                    response = await client.get(
+                        "https://openrouter.ai/api/v1/models",
+                        headers=headers,
+                    )
+
+                if response.status_code == 200:
+                    data = response.json().get("data", [])
+
+                    def _is_free(m: dict) -> bool:
+                        pricing = m.get("pricing") or {}
+                        prompt_price = str(pricing.get("prompt", "1"))
+                        return prompt_price == "0"
+
+                    # Lọc chỉ lấy text/chat completion models
+                    chat_models = [
+                        m for m in data
+                        if "text" in (m.get("architecture", {}).get("output_modalities") or ["text"])
+                        or "chat" in m.get("id", "").lower()
+                        or not m.get("architecture")
+                    ]
+
+                    # Sắp xếp: free trước, rồi theo tên
+                    chat_models.sort(key=lambda m: (not _is_free(m), m.get("name", m.get("id", ""))))
+
+                    seen_ids: set = set()
+                    for m in chat_models:
+                        m_id = m.get("id")
+                        m_name = m.get("name") or m_id
+                        if not m_id or m_id in seen_ids:
+                            continue
+                        seen_ids.add(m_id)
+
+                        pricing_raw = m.get("pricing") or {}
+                        free = _is_free(m)
+                        ctx = m.get("context_length")
+                        desc = m.get("description") or ""
+                        if len(desc) > 200:
+                            desc = desc[:197] + "..."
+
+                        model_info = ModelInfo(
+                            id=m_id,
+                            name=m_name,
+                            mode="quick",
+                            is_free=free,
+                            context_length=ctx,
+                            description=desc if desc else None,
+                            pricing={
+                                "prompt": pricing_raw.get("prompt", "0"),
+                                "completion": pricing_raw.get("completion", "0"),
+                            },
+                        )
+                        models.append(model_info)
+                        models.append(model_info.model_copy(update={"mode": "deep"}))
+
+                    # Nếu có API key, validate key hợp lệ -> cập nhật is_ready trong provider_info
+                    if api_key:
+                        try:
+                            async with httpx.AsyncClient(timeout=5.0) as client:
+                                key_resp = await client.get(
+                                    "https://openrouter.ai/api/v1/auth/key",
+                                    headers={"Authorization": f"Bearer {api_key}"},
+                                )
+                            if key_resp.status_code == 200:
+                                key_data = key_resp.json().get("data", {})
+                                # Key hợp lệ -> is_ready đã đúng (True từ _check_provider_ready)
+                                # Có thể log usage: key_data.get("usage"), key_data.get("limit")
+                                pass
+                            else:
+                                # Key không hợp lệ -> override is_ready = False
+                                provider_info = provider_info.model_copy(update={"is_ready": False})
+                        except Exception:
+                            pass  # Không validate được -> giữ nguyên is_ready
+
+                elif response.status_code == 401:
+                    raise HTTPException(status_code=401, detail="OpenRouter API key không hợp lệ.")
+                else:
+                    raise HTTPException(
+                        status_code=response.status_code,
+                        detail=f"OpenRouter API error: {response.text[:300]}",
+                    )
+            except HTTPException:
+                raise
+            except Exception:
+                # Lỗi mạng -> fallback về static catalog bên dưới
+                pass
+
         if not models:
             model_catalog = _MODEL_CATALOG.get(provider_lower, {})
             for mode, options in model_catalog.items():

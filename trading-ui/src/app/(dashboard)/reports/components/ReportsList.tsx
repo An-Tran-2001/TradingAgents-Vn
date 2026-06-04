@@ -1,6 +1,6 @@
 import React from "react"
 import { 
-  Activity, Cpu, ArrowUpRight, ArrowDownRight, Clock, Target, ChevronRight 
+  Activity, Cpu, ArrowUpRight, ArrowDownRight, Clock, Target, ChevronRight, Trash2 
 } from "lucide-react"
 import { useLanguage } from "@/contexts/language-context"
 import { Badge } from "@/components/ui/badge"
@@ -15,6 +15,7 @@ interface ReportsListProps {
   reports: DayReport[]
   selectedReport: DayReport | null
   onSelectReport: (report: DayReport | null) => void
+  onRequestDelete?: (reportId: string | number) => void
 }
 
 export const ReportsList: React.FC<ReportsListProps> = ({
@@ -22,6 +23,7 @@ export const ReportsList: React.FC<ReportsListProps> = ({
   reports,
   selectedReport,
   onSelectReport,
+  onRequestDelete,
 }) => {
   const { t } = useLanguage()
   const lastReport = reports.length > 0 ? reports[0] : null
@@ -81,21 +83,23 @@ export const ReportsList: React.FC<ReportsListProps> = ({
             const lastForecastIndex = hasForecast ? r.forecast.length - 1 : 0;
             const targetForecast = hasForecast ? r.forecast[lastForecastIndex] : null;
             
-            const forecastReturn = targetForecast && r.price 
-              ? (((targetForecast.price - r.price) / r.price) * 100).toFixed(1) 
+            const targetPrice = targetForecast?.price || 0;
+            const currentPrice = r.price || 0;
+            const forecastReturn = targetForecast && currentPrice 
+              ? (((targetPrice - currentPrice) / currentPrice) * 100).toFixed(1) 
               : "0.0";
-            const forecastPositive = targetForecast ? targetForecast.price > r.price : false;
+            const forecastPositive = targetForecast ? targetPrice > currentPrice : false;
             
             return (
-              <div 
-                key={r.id} 
-                onClick={() => onSelectReport(isSelected ? null : r)}
-                className={`p-4 rounded-xl border cursor-pointer transition-all hover:-translate-y-0.5 ${
-                  isSelected
-                    ? `${cfg.bg} ${cfg.border} shadow-[0_0_20px_rgba(0,0,0,0.3)]`
-                    : "bg-card/30 border-border/30 hover:border-primary/30 hover:bg-card/60"
-                }`}
-              >
+              <div key={r.id} className="relative group">
+                <div 
+                  onClick={() => onSelectReport(isSelected ? null : r)}
+                  className={`p-4 rounded-xl border cursor-pointer transition-all hover:-translate-y-0.5 ${
+                    isSelected
+                      ? `${cfg.bg} ${cfg.border} shadow-[0_0_20px_rgba(0,0,0,0.3)]`
+                      : "bg-card/30 border-border/30 hover:border-primary/30 hover:bg-card/60"
+                  }`}
+                >
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-muted-foreground flex items-center gap-1">
@@ -152,6 +156,19 @@ export const ReportsList: React.FC<ReportsListProps> = ({
                     isSelected ? "rotate-90" : ""
                   }`}/>
                 </div>
+                </div>
+                {onRequestDelete && (
+                  <button
+                    className="absolute top-4 right-4 p-2 rounded-lg bg-red-500/10 text-red-500 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500/20 z-10"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onRequestDelete(r.id)
+                    }}
+                    title={t("reports.deleteReport") || "Delete Report"}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                )}
               </div>
             )
           })}

@@ -1,5 +1,5 @@
 import React, { useState } from "react"
-import { Search, TrendingUp, TrendingDown, Minus } from "lucide-react"
+import { Search, TrendingUp, TrendingDown, Minus, Trash2 } from "lucide-react"
 import { useLanguage } from "@/contexts/language-context"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { TickerInfo } from "../types"
@@ -14,12 +14,14 @@ interface TickerListProps {
   tickers: TickerInfo[]
   selectedTicker: TickerInfo
   onSelectTicker: (ticker: TickerInfo) => void
+  onRequestDelete?: (ticker: TickerInfo) => void
 }
 
 export const TickerList: React.FC<TickerListProps> = ({
   tickers,
   selectedTicker,
   onSelectTicker,
+  onRequestDelete,
 }) => {
   const { t } = useLanguage()
   const [search, setSearch] = useState("")
@@ -57,34 +59,47 @@ export const TickerList: React.FC<TickerListProps> = ({
             const cfg = REC[tickerItem.latestRecommendation || "HOLD"]
             const isActive = selectedTicker.ticker === tickerItem.ticker
             return (
-              <button 
-                key={tickerItem.ticker} 
-                onClick={() => onSelectTicker(tickerItem)}
-                className={`w-full text-left px-3 py-3 rounded-xl transition-all border ${
-                  isActive
-                    ? "bg-primary/10 border-primary/30 shadow-[0_0_15px_rgba(0,240,255,0.08)]"
-                    : "hover:bg-muted/30 border-transparent"
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className={`font-bold text-sm ${isActive ? "text-primary" : "text-foreground"}`}>
-                      {tickerItem.ticker}
-                    </div>
-                    <div className="text-[10px] text-muted-foreground truncate max-w-[100px]">
-                      {tickerItem.name}
+              <div key={tickerItem.ticker} className="relative group">
+                <button 
+                  onClick={() => onSelectTicker(tickerItem)}
+                  className={`w-full text-left px-3 py-3 rounded-xl transition-all border ${
+                    isActive
+                      ? "bg-primary/10 border-primary/30 shadow-[0_0_15px_rgba(0,240,255,0.08)]"
+                      : "hover:bg-muted/30 border-transparent"
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className={`font-bold text-sm ${isActive ? "text-primary" : "text-foreground"}`}>
+                        {tickerItem.ticker}
+                      </div>
+                      <div className="text-[10px] text-muted-foreground truncate max-w-[100px]">
+                        {tickerItem.name}
+                      </div>
                     </div>
                   </div>
-                </div>
-                <div className="flex items-center justify-between mt-1.5">
-                  <span className="text-[10px] text-muted-foreground">
-                    {tickerItem.reportCount} {t("reports.reportsCount")}
-                  </span>
-                  <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${cfg.bg} ${cfg.color}`}>
-                    {tickerItem.latestRecommendation}
-                  </span>
-                </div>
-              </button>
+                  <div className="flex items-center justify-between mt-1.5">
+                    <span className="text-[10px] text-muted-foreground">
+                      {tickerItem.reportCount} {t("reports.reportsCount")}
+                    </span>
+                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${cfg.bg} ${cfg.color}`}>
+                      {tickerItem.latestRecommendation}
+                    </span>
+                  </div>
+                </button>
+                {onRequestDelete && (
+                  <button
+                    className="absolute top-2 right-2 p-1.5 rounded-lg bg-red-500/10 text-red-500 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500/20 z-10"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onRequestDelete(tickerItem)
+                    }}
+                    title={t("reports.deleteTicker") || "Delete Ticker"}
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
             )
           })}
         </div>

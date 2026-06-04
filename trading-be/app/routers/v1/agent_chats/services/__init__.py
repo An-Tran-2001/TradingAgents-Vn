@@ -266,19 +266,19 @@ class ChatService:
                         
                         structured_report = final_state.get("structured_report")
                         if structured_report:
-                            update_data.update({
-                                "change": structured_report.get("change"),
-                                "agents_count": structured_report.get("agents_count"),
-                                "current_price": structured_report.get("current_price"),
-                                "target_price": structured_report.get("target_price"),
-                                "stop_loss": structured_report.get("stop_loss"),
-                                "risk_reward": structured_report.get("risk_reward"),
+                            sr_update: dict = {
                                 "recommendation": structured_report.get("recommendation"),
                                 "confidence": structured_report.get("confidence"),
                                 "summary": structured_report.get("summary", update_data["summary"]),
                                 "bull_points": structured_report.get("bull_points", []),
-                                "bear_points": structured_report.get("bear_points", [])
-                            })
+                                "bear_points": structured_report.get("bear_points", []),
+                            }
+                            # Only include numeric fields when explicitly set (Optional in schema)
+                            for field in ("change", "agents_count", "current_price", "target_price", "stop_loss", "risk_reward"):
+                                val = structured_report.get(field)
+                                if val is not None:
+                                    sr_update[field] = val
+                            update_data.update(sr_update)
                             
                         await self.report_repo.update(
                             db_obj=report,
@@ -301,11 +301,11 @@ class ChatService:
                             for f in structured_report.get("forecasts", []):
                                 new_f = ReportForecast(
                                     report_id=report.id,
-                                    day_offset=f.get("day", ""),
-                                    price_low=f.get("low", 0.0),
-                                    price_high=f.get("high", 0.0),
-                                    price_target=f.get("price", 0.0),
-                                    signal=f.get("signal", "")
+                                    day_offset=f.get("day") or "",
+                                    price_low=f.get("low") if f.get("low") is not None else 0.0,
+                                    price_high=f.get("high") if f.get("high") is not None else 0.0,
+                                    price_target=f.get("price") if f.get("price") is not None else 0.0,
+                                    signal=f.get("signal") or ""
                                 )
                                 self.report_repo.db.add(new_f)
                                 

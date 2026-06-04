@@ -64,3 +64,15 @@ export async function fetchReportDetails(reportId: number): Promise<DayReport> {
 export async function fetchReportLogs(reportId: number | string): Promise<any[]> {
   return await fetchClient(`/agent_reports/${reportId}/logs`)
 }
+
+export async function deleteReport(reportId: number | string): Promise<void> {
+  return await fetchClient(`/agent_reports/${reportId}`, {
+    method: "DELETE",
+  })
+}
+
+export async function deleteTickerReports(ticker: string): Promise<void> {
+  return await fetchClient(`/agent_reports/tickers/${ticker}`, {
+    method: "DELETE",
+  })
+}

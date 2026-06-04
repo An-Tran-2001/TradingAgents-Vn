@@ -5,13 +5,17 @@ import datetime
 from typing import Dict, Any, AsyncGenerator, Optional, List, Literal
 from concurrent.futures import ThreadPoolExecutor
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from tradingagents.graph.trading_graph import TradingAgentsGraph
 from tradingagents.default_config import DEFAULT_CONFIG
 from app.agent_core.common.date import normalize_analysis_date
 from tradingagents.llm_clients import create_llm_client
 from langchain_core.messages import HumanMessage, AIMessageChunk
+from app.routers.v1.agent_reports.models.non_relational import AgentLog
+from tradingagents.graph.checkpointer import thread_id
+from langchain_core.messages import AIMessage, ToolMessage, HumanMessage
+from tradingagents.agents.utils.agent_utils import _normalize_language_name
 from langgraph.prebuilt import create_react_agent
 from app.agent_core.tools import (
     get_current_stock_price,
@@ -22,34 +26,97 @@ from app.agent_core.tools import (
 
 logger = logging.getLogger(__name__)
 
+# All possible recommendation values across the full 5-tier scale used by agents
+# PortfolioRating: Buy / Overweight / Hold / Underweight / Sell  (Research Manager, Portfolio Manager)
+# TraderAction:    Buy / Hold / Sell                             (Trader)
+# Plus capitalization variants the LLM may produce
+ANY_RECOMMENDATION = Literal[
+    "BUY",
+    "OVERWEIGHT",
+    "HOLD",
+    "UNDERWEIGHT",
+    "SELL",
+    "Buy",
+    "Overweight",
+    "Hold",
+    "Underweight",
+    "Sell",
+    "STRONG BUY",
+    "STRONG SELL",
+    "ACCUMULATE",
+    "REDUCE",
+    "AVOID",
+    "NEUTRAL",
+]
+
+
+# Normalize any 5-tier / trader rating → canonical BUY / HOLD / SELL for the frontend
+def _normalize_rec(v: str) -> str:
+    mapping = {
+        "buy": "BUY",
+        "strong buy": "BUY",
+        "overweight": "BUY",
+        "accumulate": "BUY",
+        "hold": "HOLD",
+        "neutral": "HOLD",
+        "equal-weight": "HOLD",
+        "equal weight": "HOLD",
+        "sell": "SELL",
+        "strong sell": "SELL",
+        "underweight": "SELL",
+        "reduce": "SELL",
+        "avoid": "SELL",
+    }
+    return mapping.get(str(v).lower().strip(), str(v).upper().strip())
+
+
 class AgentOutputSchema(BaseModel):
     team: Literal["Analyst", "Research", "Execution"]
     agent: str
-    recommendation: Literal["BUY", "HOLD", "SELL"]
+    # Accept full 5-tier scale + trader actions; store as-is for display
+    recommendation: str = Field(description="Investment recommendation from this agent")
     confidence: int = Field(ge=0, le=100)
     summary: str
+
+    @field_validator("recommendation", mode="before")
+    @classmethod
+    def normalize_agent_rec(cls, v: str) -> str:
+        return _normalize_rec(v)
+
 
 class ForecastDaySchema(BaseModel):
     day: str = Field(description="e.g. D+1, D+2")
     signal: Literal["UP", "DOWN", "FLAT"]
-    low: float
-    high: float
-    price: float
+    low: Optional[float] = None
+    high: Optional[float] = None
+    price: Optional[float] = None
+
 
 class ReportExtractionSchema(BaseModel):
-    change: float = Field(description="Percentage change today or from entry")
-    agents_count: int
-    recommendation: Literal["BUY", "HOLD", "SELL"]
-    confidence: int = Field(ge=0, le=100)
-    current_price: float
-    target_price: float
-    stop_loss: float
-    risk_reward: float
-    summary: str
-    bull_points: List[str]
-    bear_points: List[str]
-    agent_outputs: List[AgentOutputSchema]
-    forecasts: List[ForecastDaySchema]
+    change: float = Field(
+        default=0.0, description="Percentage change today or from entry"
+    )
+    agents_count: int = Field(default=0)
+    # Normalized to BUY / HOLD / SELL for frontend display
+    recommendation: str = Field(
+        description="Final recommendation: BUY, OVERWEIGHT, HOLD, UNDERWEIGHT, or SELL"
+    )
+    confidence: int = Field(default=50, ge=0, le=100)
+    current_price: Optional[float] = Field(default=None)
+    target_price: Optional[float] = Field(default=None)
+    stop_loss: Optional[float] = Field(default=None)
+    risk_reward: Optional[float] = Field(default=None)
+    summary: str = Field(default="")
+    bull_points: List[str] = Field(default_factory=list)
+    bear_points: List[str] = Field(default_factory=list)
+    agent_outputs: List[AgentOutputSchema] = Field(default_factory=list)
+    forecasts: List[ForecastDaySchema] = Field(default_factory=list)
+
+    @field_validator("recommendation", mode="before")
+    @classmethod
+    def normalize_recommendation(cls, v: str) -> str:
+        return _normalize_rec(v)
+
 
 # Node Name to Readable Agent Name Mapping
 AGENT_NAME_MAPPING = {
@@ -87,11 +154,11 @@ AGENT_NAME_MAPPING = {
     "generate_reports": "System",
 }
 
+
 def classify_and_format_message(msg, node_name: str) -> list:
     """
     Classify a message from state_update["messages"] and return list of formatted event dicts.
     """
-    from langchain_core.messages import AIMessage, ToolMessage, HumanMessage
     events = []
 
     # 1. Process Tool Calls in AIMessages
@@ -118,12 +185,14 @@ def classify_and_format_message(msg, node_name: str) -> list:
                 if len(args_str) > 60:
                     args_str = args_str[:57] + "..."
 
-            events.append({
-                "type": "message",
-                "node": node_name,
-                "content": f"**Action**: call tool `{tc_name}({args_str})`",
-                "log_type": "Action"
-            })
+            events.append(
+                {
+                    "type": "message",
+                    "node": node_name,
+                    "content": f"**Action**: call tool `{tc_name}({args_str})`",
+                    "log_type": "Action",
+                }
+            )
 
     # 2. Process message content
     raw_content = getattr(msg, "content", None)
@@ -152,37 +221,45 @@ def classify_and_format_message(msg, node_name: str) -> list:
             snippet = content_str
             if content_len > 150:
                 snippet = content_str[:147] + "..."
-            
+
             # Escape newlines to keep snippet clean in table format
             snippet = snippet.replace("\n", " ")
             formatted_content = f"**Tool Output**: `{tool_name}` returned: {snippet} ({content_len} bytes)"
-            events.append({
-                "type": "message",
-                "node": node_name,
-                "content": formatted_content,
-                "log_type": "Tool"
-            })
+            events.append(
+                {
+                    "type": "message",
+                    "node": node_name,
+                    "content": formatted_content,
+                    "log_type": "Tool",
+                }
+            )
         elif isinstance(msg, AIMessage) or "AIMessage" in msg.__class__.__name__:
-            events.append({
-                "type": "message",
-                "node": node_name,
-                "content": content_str,
-                "log_type": "Reasoning"
-            })
+            events.append(
+                {
+                    "type": "message",
+                    "node": node_name,
+                    "content": content_str,
+                    "log_type": "Reasoning",
+                }
+            )
         elif isinstance(msg, HumanMessage) or "HumanMessage" in msg.__class__.__name__:
-            events.append({
-                "type": "message",
-                "node": node_name,
-                "content": content_str,
-                "log_type": "User"
-            })
+            events.append(
+                {
+                    "type": "message",
+                    "node": node_name,
+                    "content": content_str,
+                    "log_type": "User",
+                }
+            )
         else:
-            events.append({
-                "type": "message",
-                "node": node_name,
-                "content": content_str,
-                "log_type": "System"
-            })
+            events.append(
+                {
+                    "type": "message",
+                    "node": node_name,
+                    "content": content_str,
+                    "log_type": "System",
+                }
+            )
 
     return events
 
@@ -249,8 +326,6 @@ class ResearchAgentRunner:
         Runs the TradingAgentsGraph and yields JSON stream events for the UI.
         Saves intermediate reasoning into MongoDB via AgentLog.
         """
-        from app.routers.v1.agent_reports.models.non_relational import AgentLog
-
         ticker = self.config.get("ticker", "AAPL")
         asset_type = self.config.get("asset_type", "stock")
         trade_date = self.config.get(
@@ -300,8 +375,6 @@ class ResearchAgentRunner:
         )
 
         if graph_runner.config.get("checkpoint_enabled"):
-            from tradingagents.graph.checkpointer import thread_id
-
             tid = thread_id(ticker, str(trade_date))
             args.setdefault("config", {}).setdefault("configurable", {})[
                 "thread_id"
@@ -321,25 +394,27 @@ class ResearchAgentRunner:
                     else {}
                 )
                 args["stream_mode"] = "updates"
-                
+
                 processed_msg_ids = set()
 
                 for chunk in graph_runner.graph.stream(init_agent_state, **args):
                     for node_name, state_update in chunk.items():
                         if isinstance(state_update, dict):
                             final_state.update(state_update)
-                            
-                            has_messages = "messages" in state_update and state_update["messages"]
+
+                            has_messages = (
+                                "messages" in state_update and state_update["messages"]
+                            )
                             if has_messages:
                                 for msg in state_update["messages"]:
                                     msg_id = getattr(msg, "id", None)
                                     if not msg_id:
                                         msg_id = f"{msg.__class__.__name__}_{hash(str(getattr(msg, 'content', '')))}"
-                                    
+
                                     if msg_id in processed_msg_ids:
                                         continue
                                     processed_msg_ids.add(msg_id)
-                                    
+
                                     events = classify_and_format_message(msg, node_name)
                                     for ev in events:
                                         loop.call_soon_threadsafe(queue.put_nowait, ev)
@@ -347,7 +422,7 @@ class ResearchAgentRunner:
                                 # Extract non-message updates (chunks)
                                 content = ""
                                 log_type = "Reasoning"
-                                
+
                                 if "investment_debate_state" in state_update:
                                     debate = state_update["investment_debate_state"]
                                     if node_name == "Bull Researcher":
@@ -359,22 +434,28 @@ class ResearchAgentRunner:
                                     elif node_name == "Research Manager":
                                         content = debate.get("judge_decision", "")
                                         log_type = "Synthesis"
-                                        
+
                                 elif "risk_debate_state" in state_update:
                                     risk = state_update["risk_debate_state"]
                                     if node_name == "Aggressive Analyst":
-                                        content = risk.get("current_aggressive_response", "")
+                                        content = risk.get(
+                                            "current_aggressive_response", ""
+                                        )
                                         log_type = "Reasoning"
                                     elif node_name == "Neutral Analyst":
-                                        content = risk.get("current_neutral_response", "")
+                                        content = risk.get(
+                                            "current_neutral_response", ""
+                                        )
                                         log_type = "Reasoning"
                                     elif node_name == "Conservative Analyst":
-                                        content = risk.get("current_conservative_response", "")
+                                        content = risk.get(
+                                            "current_conservative_response", ""
+                                        )
                                         log_type = "Reasoning"
                                     elif node_name == "Portfolio Manager":
                                         content = risk.get("judge_decision", "")
                                         log_type = "Synthesis"
-                                        
+
                                 if content and content.strip():
                                     loop.call_soon_threadsafe(
                                         queue.put_nowait,
@@ -382,8 +463,8 @@ class ResearchAgentRunner:
                                             "type": "message",
                                             "node": node_name,
                                             "content": content.strip(),
-                                            "log_type": log_type
-                                        }
+                                            "log_type": log_type,
+                                        },
                                     )
                         else:
                             # Fallback if chunk is not in 'updates' format (e.g., 'values' mode is forced somehow)
@@ -398,11 +479,11 @@ class ResearchAgentRunner:
                                     msg_id = getattr(msg, "id", None)
                                     if not msg_id:
                                         msg_id = f"{msg.__class__.__name__}_{hash(str(getattr(msg, 'content', '')))}"
-                                    
+
                                     if msg_id in processed_msg_ids:
                                         continue
                                     processed_msg_ids.add(msg_id)
-                                    
+
                                     events = classify_and_format_message(msg, "System")
                                     for ev in events:
                                         loop.call_soon_threadsafe(queue.put_nowait, ev)
@@ -415,39 +496,71 @@ class ResearchAgentRunner:
                     trade_date=trade_date,
                     final_trade_decision=final_state.get("final_trade_decision", ""),
                 )
-                
+
                 # Perform structured extraction
                 try:
+                    # Notify frontend that synthesis is starting
+                    loop.call_soon_threadsafe(
+                        queue.put_nowait,
+                        {
+                            "type": "message",
+                            "node": "System",
+                            "content": "📊 **Synthesis Phase**: Generating executive summary and structured report from all agent outputs...",
+                            "log_type": "System",
+                        },
+                    )
+
                     llm_client = create_llm_client(
                         provider=self.config.get("llm_provider", "openai"),
                         model=self.config.get("deep_think_llm", "gpt-4o"),
                         api_key=self.config.get("api_key"),
                         base_url=self.config.get("backend_url"),
                     ).get_llm()
-                    
+
                     trader_plan = final_state.get("trader_investment_plan", "")
-                    pm_decision = final_state.get("investment_debate_state", {}).get("judge_decision", "")
-                    risk_limits = final_state.get("risk_debate_state", {}).get("judge_decision", "")
-                    
+                    # investment_debate_state.judge_decision = Research Manager's verdict
+                    research_verdict = final_state.get(
+                        "investment_debate_state", {}
+                    ).get("judge_decision", "")
+                    # risk_debate_state.judge_decision = Portfolio Manager's final decision
+                    pm_decision = final_state.get("risk_debate_state", {}).get(
+                        "judge_decision", ""
+                    )
+
                     focused_context = f"""
---- TRADER'S FINAL EXECUTION PLAN ---
+--- RESEARCH MANAGER'S VERDICT ---
+{research_verdict}
+
+--- TRADER'S EXECUTION PLAN ---
 {trader_plan}
 
---- PORTFOLIO MANAGER'S STRATEGY ---
+--- PORTFOLIO MANAGER'S FINAL DECISION ---
 {pm_decision}
-
---- RISK MANAGER'S LIMITS ---
-{risk_limits}
 """
+                    lang = _normalize_language_name(
+                        self.config.get(
+                            "output_language", self.config.get("language", "English")
+                        )
+                    )
+                    lang_instruction = (
+                        f" Write your entire response in {lang}."
+                        if lang.lower() != "english"
+                        else ""
+                    )
 
                     eval_prompt = f"""You are the Chief Editor of a premium financial research firm. 
 Your task is to write a concise 2-paragraph executive summary for {ticker} directed at the client.
-CRITICAL INSTRUCTION: You MUST NOT formulate your own opinion. You MUST strictly reflect and synthesize the decisions already made by the Trader and Portfolio Manager below. If they concluded 'Underweight' or 'Hold', your summary must reflect that exact sentiment.
+CRITICAL INSTRUCTION: You MUST NOT formulate your own opinion. You MUST strictly reflect and synthesize:
+1. The Research Manager's verdict on the Bull/Bear debate
+2. The Trader's specific execution plan (timing, sizing, entry/exit)
+3. The Portfolio Manager's FINAL APPROVAL or REJECTION — this is the authoritative decision.
+
+If the Portfolio Manager concluded 'Underweight', 'Reject', or 'Hold', your summary MUST reflect that exact sentiment.
 
 {focused_context}
 
-Use your tools ONLY to fetch the current live price and date to ground the report. Speak directly to the user."""
-                    
+Use your tools ONLY to fetch the current live price and date to ground the report. Speak directly to the user.{lang_instruction}"""
+
                     eval_tools = [
                         get_current_stock_price,
                         get_current_datetime,
@@ -455,18 +568,26 @@ Use your tools ONLY to fetch the current live price and date to ground the repor
                         query_past_report,
                     ]
                     react_agent = create_react_agent(llm_client, tools=eval_tools)
-                    
+
                     result = react_agent.invoke({"messages": [("user", eval_prompt)]})
                     final_msg = result["messages"][-1]
-                    
+
                     if isinstance(final_msg.content, list):
-                        agent_eval_text = "".join([c.get("text", "") for c in final_msg.content if isinstance(c, dict) and "text" in c])
+                        agent_eval_text = "".join(
+                            [
+                                c.get("text", "")
+                                for c in final_msg.content
+                                if isinstance(c, dict) and "text" in c
+                            ]
+                        )
                     else:
                         agent_eval_text = str(final_msg.content)
-                        
+
                     # 2. Extract structured JSON using the agent_eval_text as additional context
-                    structured_llm = llm_client.with_structured_output(ReportExtractionSchema)
-                    
+                    structured_llm = llm_client.with_structured_output(
+                        ReportExtractionSchema
+                    )
+
                     analyst_context = f"""
 --- FUNDAMENTALS ---
 {final_state.get('fundamentals_report', '')}
@@ -477,64 +598,107 @@ Use your tools ONLY to fetch the current live price and date to ground the repor
 --- NEWS ---
 {final_state.get('news_report', '')}
 """
-                    
-                    prompt = f"""Extract a structured financial report for ticker {ticker}.
-CRITICAL RULE: The final 'recommendation' (BUY/HOLD/SELL) MUST strictly align with the Trader's and Portfolio Manager's plans. 
-- Overweight/Accumulate -> BUY
-- Equal-weight/Neutral/Hold -> HOLD
-- Underweight/Reduce/Avoid -> SELL
 
-Context (Execution & Risk):
+                    prompt = f"""Extract a structured financial report for ticker {ticker}.
+
+The agents in this system use a 5-tier rating scale:
+  Buy / Overweight / Hold / Underweight / Sell  (Research Manager & Portfolio Manager)
+  Buy / Hold / Sell                              (Trader)
+
+For the 'recommendation' field of each agent_output and the top-level recommendation:
+  - Map to: BUY (for Buy/Overweight/Accumulate/Strong Buy)
+  - Map to: HOLD (for Hold/Neutral/Equal-weight)
+  - Map to: SELL (for Sell/Underweight/Reduce/Avoid/Strong Sell)
+
+The top-level 'recommendation' MUST reflect the Portfolio Manager's final rating (authoritative).
+Do NOT invent a new opinion — extract directly from the Portfolio Manager's decision below.
+
+Context (Decision Chain — use this for recommendation & summary):
 {focused_context}
 
-Context (Analysts):
+Context (Analyst Reports — use for bull/bear points, agent_outputs, forecasts):
 {analyst_context}
 
-Chief Editor's Summary:
+Chief Editor's Summary (use as the 'summary' field):
 {agent_eval_text}
 
-Ensure you synthesize 5 days of forecast data and map the individual analyst findings correctly to the required schema."""
+For forecasts: synthesize 5 trading days (D+1 through D+5) with signal UP/DOWN/FLAT.
+For agent_outputs: map each analyst/researcher/trader to their team (Analyst/Research/Execution).
+If numerical price fields (price, low, high) for the forecast are not explicitly mentioned in the context, you MUST estimate plausible numerical values based on the current price, target price, and the forecasted signal trend. Do NOT leave them as null."""
                     result_json = structured_llm.invoke([HumanMessage(content=prompt)])
                     report_dict = result_json.model_dump()
-                    print(json.dumps(report_dict, indent=2))
                     final_state["structured_report"] = report_dict
-                    
+
                     # 3. Format JSON into Markdown and send to UI
+                    cp = report_dict.get("current_price")
+                    tp = report_dict.get("target_price")
+                    sl = report_dict.get("stop_loss")
+                    rr = report_dict.get("risk_reward")
+
                     md_lines = []
                     md_lines.append(f"### 📊 Executive Summary")
                     md_lines.append(f"{report_dict.get('summary', '')}\n")
-                    md_lines.append(f"**Recommendation:** {report_dict.get('recommendation', 'HOLD')} (Confidence: {report_dict.get('confidence', 0)}%)")
-                    md_lines.append(f"**Current Price:** ${report_dict.get('current_price', 0)} | **Target Price:** ${report_dict.get('target_price', 0)} | **Stop Loss:** ${report_dict.get('stop_loss', 0)}")
-                    md_lines.append(f"**Risk/Reward Ratio:** {report_dict.get('risk_reward', 0)}\n")
-                    
+                    md_lines.append(
+                        f"**Recommendation:** {report_dict.get('recommendation', 'HOLD')} (Confidence: {report_dict.get('confidence', 0)}%)"
+                    )
+                    price_parts = []
+                    if cp:
+                        price_parts.append(f"Current: ${cp:,.2f}")
+                    if tp:
+                        price_parts.append(f"Target: ${tp:,.2f}")
+                    if sl:
+                        price_parts.append(f"Stop Loss: ${sl:,.2f}")
+                    if rr:
+                        price_parts.append(f"R/R: {rr}x")
+                    if price_parts:
+                        md_lines.append(" | ".join(price_parts))
+
                     if report_dict.get("bull_points"):
                         md_lines.append("### 🟢 Bull Points")
-                        for bp in report_dict["bull_points"]: md_lines.append(f"- {bp}")
+                        for bp in report_dict["bull_points"]:
+                            md_lines.append(f"- {bp}")
                         md_lines.append("")
-                        
+
                     if report_dict.get("bear_points"):
                         md_lines.append("### 🔴 Bear Points")
-                        for bp in report_dict["bear_points"]: md_lines.append(f"- {bp}")
+                        for bp in report_dict["bear_points"]:
+                            md_lines.append(f"- {bp}")
                         md_lines.append("")
-                        
+
                     if report_dict.get("forecasts"):
                         md_lines.append("### 🔮 5-Day Forecast")
                         md_lines.append("| Day | Signal | Price | Low | High |")
                         md_lines.append("|---|---|---|---|---|")
                         for f in report_dict["forecasts"]:
-                            md_lines.append(f"| {f['day']} | {f['signal']} | ${f['price']} | ${f['low']} | ${f['high']} |")
+                            p = (
+                                f"${f['price']}"
+                                if f.get("price") is not None
+                                else "N/A"
+                            )
+                            l = f"${f['low']}" if f.get("low") is not None else "N/A"
+                            h = f"${f['high']}" if f.get("high") is not None else "N/A"
+                            md_lines.append(
+                                f"| {f['day']} | {f['signal']} | {p} | {l} | {h} |"
+                            )
                         md_lines.append("")
-                        
+
                     if report_dict.get("agent_outputs"):
                         md_lines.append("### 🤖 Agent Outputs")
                         for ao in report_dict["agent_outputs"]:
-                            md_lines.append(f"**{ao['agent']}** ({ao['team']} Team): {ao['recommendation']} ({ao['confidence']}%)")
+                            md_lines.append(
+                                f"**{ao['agent']}** ({ao['team']} Team): {ao['recommendation']} ({ao['confidence']}%)"
+                            )
                             md_lines.append(f"> {ao['summary']}\n")
-                            
+
                     markdown_content = "\n".join(md_lines)
-                    
+
                     loop.call_soon_threadsafe(
-                        queue.put_nowait, {"type": "agent_log_chunk", "agent": "System", "content": markdown_content}
+                        queue.put_nowait,
+                        {
+                            "type": "agent_log_chunk",
+                            "agent": "System",
+                            "content": markdown_content,
+                        },
                     )
                 except Exception as ex:
                     logger.error(f"Failed to extract structured report: {ex}")
@@ -563,9 +727,8 @@ Ensure you synthesize 5 days of forecast data and map the individual analyst fin
                 raw_state = event.get("final_state", {}).copy()
                 if "messages" in raw_state:
                     del raw_state["messages"]
-                
+
                 try:
-                    import json
                     serializable_state = json.loads(json.dumps(raw_state, default=str))
                 except Exception as e:
                     logger.error(f"Failed to serialize final state: {e}")
@@ -608,7 +771,10 @@ Ensure you synthesize 5 days of forecast data and map the individual analyst fin
                     agent_name=agent_readable,
                     log_type=log_type,
                     content=content,
-                    meta_data={"node": node_name},
+                    meta_data={
+                        "node": node_name,
+                        "model": self.config.get("deep_think_llm", "unknown"),
+                    },
                 )
                 await log_entry.insert()
 

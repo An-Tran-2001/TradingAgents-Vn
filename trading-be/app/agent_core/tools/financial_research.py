@@ -4,20 +4,27 @@ from langchain_core.tools import tool
 @tool
 def run_financial_research(ticker: str, analysis_date: str) -> str:
     """
-    Triggers a comprehensive multi-agent financial research pipeline (TradingAgents) for a NEW analysis of a specific asset.
+    Executes a heavy, multi-agent financial research pipeline to generate a NEW, comprehensive investment decision.
 
-    CRITICAL USAGE RULES:
-    1. ONLY use this tool when the user EXPLICITLY requests a NEW deep analysis, stock evaluation, or investment advice (buy/hold/sell) for a specific ticker that has NOT been analyzed in the current context yet.
-    2. DO NOT use this tool if the user is asking follow-up questions, asking for clarification, or requesting a simpler explanation of an ALREADY GENERATED report. For those cases, use the `query_past_report` tool or rely on your existing context.
-    3. DO NOT use this tool for simple general questions, fetching current stock prices, or reading general market news.
+    STRICT CONDITIONS FOR CALLING THIS TOOL - YOU MUST VERIFY THESE BEFORE CALLING:
+    Condition 1: The user explicitly requests a DEEP, COMPREHENSIVE analysis or a buy/hold/sell RECOMMENDATION for a specific ticker.
+    Condition 2: The requested ticker HAS NOT been deeply analyzed in the current conversation history yet.
 
-    The pipeline involves specialized agents (Fundamental, Sentiment, News, Technical Analysts, Risk Management) and takes significant time and resources to generate a comprehensive investment decision (Action, Reasoning, Position Sizing).
+    DO NOT CALL THIS TOOL IF:
+    - The user is asking a follow-up question about an already analyzed ticker (Use `query_past_report` instead).
+    - The user only wants to know the current price, general news, or basic company info.
+    - The user is asking a casual or theoretical finance question.
 
-    Use cases:
-    - User: "Phân tích mã AAPL ngày hôm nay" -> Call run_financial_research(ticker="AAPL", analysis_date="YYYY-MM-DD")
-    - User: "Có nên mua VCB lúc này không?" -> Call run_financial_research(ticker="VCB", analysis_date="YYYY-MM-DD")
+    WARNING: This tool is expensive and time-consuming. It simulates a full investment firm (Technical, Fundamental, Sentiment, Risk Analysts). Only trigger it when a full, new research report is definitively demanded.
 
-    Requires `ticker` (the exact stock symbol) and `analysis_date` (YYYY-MM-DD format).
+    Examples that SHOULD trigger this tool:
+    - "Phân tích mã AAPL giúp tôi."
+    - "Tôi có nên mua cổ phiếu VCB ngay bây giờ không?"
+    - "Đánh giá toàn diện mã HPG."
+
+    Args:
+        ticker (str): The exact stock/crypto symbol (e.g., 'AAPL', 'VCB', 'BTC-USD').
+        analysis_date (str): The target date for analysis in 'YYYY-MM-DD' format.
     """
     # This tool acts as a routing signal in the Orchestrator.
     # The actual execution is handled by the ResearchAgentRunner via FastAPI handoff.

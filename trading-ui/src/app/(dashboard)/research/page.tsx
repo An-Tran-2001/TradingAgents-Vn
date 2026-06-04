@@ -29,12 +29,12 @@ const AGENT_STEP_MAP: Record<string, number> = {
   "Bull Researcher": 5,
   "Bear Researcher": 6,
   "Research Manager": 7,
-  "Aggressive Analyst": 8,
-  "Conservative Analyst": 8,
-  "Neutral Analyst": 8,
-  "Risk Management": 8,
-  "Portfolio Manager": 9,
-  "Trader": 10,
+  "Trader": 8,
+  "Aggressive Analyst": 9,
+  "Conservative Analyst": 9,
+  "Neutral Analyst": 9,
+  "Risk Management": 9,
+  "Portfolio Manager": 10,
   "System": 11
 };
 
@@ -349,14 +349,24 @@ export default function AgentsResearchPage() {
                 setLogs(prev => {
                   const newLogs = [...prev];
                   const lastLog = newLogs[newLogs.length - 1];
-                  if (lastLog && lastLog.agent === data.agent) {
+                  if (lastLog && lastLog.agent === (data.agent || "System")) {
                     newLogs[newLogs.length - 1] = {
                       ...lastLog,
                       content: lastLog.content + data.content
                     };
+                  } else {
+                    // Push as a new log entry if no matching agent found
+                    newLogs.push({
+                      step: newLogs.length + 1,
+                      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+                      agent: data.agent || "System",
+                      type: "Synthesis",
+                      content: data.content
+                    });
                   }
                   return newLogs;
                 });
+                setLogAnimationStep(prev => Math.max(prev, 11));
               } else if (data.type === "pipeline_complete") {
                 finalState = data.final_state;
                 setLogAnimationStep(12); // Finish pipeline visually
@@ -379,59 +389,34 @@ export default function AgentsResearchPage() {
         }
       }
       
-      // If we got a final state, show the complete report
+      // If we got a final state, show the complete report in chat
       if (finalState) {
         setTimeout(() => {
           setIsTyping(false);
           setIsResearching(false);
           setActiveLogTab("All");
           
-          setMessages(prev => {
-            const lastMsg = prev[prev.length - 1];
-            if (lastMsg && (lastMsg.role === "assistant" || lastMsg.role === "agent")) {
-              return [
-                ...prev.slice(0, -1),
-                {
-                  ...lastMsg,
-                  content: (
-                    <div className="space-y-4">
-                      {typeof lastMsg.content === 'string' ? <p>{lastMsg.content}</p> : lastMsg.content}
-                      <FinalReport 
-                        ticker={activeTicker || "Asset"} 
-                        finalState={finalState} 
-                        onReplay={replayWorkflow}
-                        onViewLogs={() => {
-                          setIsViewingLogs(true);
-                          setIsCliExpanded(true);
-                        }}
-                      />
-                    </div>
-                  )
-                }
-              ];
-            } else {
-              return [
-                ...prev,
-                {
-                  id: Date.now().toString(),
-                  role: "agent",
-                  agentRole: "Tauric Nexus",
-                  content: (
-                    <FinalReport 
-                      ticker={activeTicker || "Asset"} 
-                      finalState={finalState} 
-                      onReplay={replayWorkflow}
-                      onViewLogs={() => {
-                        setIsViewingLogs(true);
-                        setIsCliExpanded(true);
-                      }}
-                    />
-                  ),
-                  timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                }
-              ];
+          // Always push FinalReport as a standalone agent message so it's clearly visible in chat
+          setMessages(prev => [
+            ...prev,
+            {
+              id: Date.now().toString(),
+              role: "agent" as const,
+              agentRole: "Research Team",
+              content: (
+                <FinalReport
+                  ticker={activeTicker || "Asset"}
+                  finalState={finalState}
+                  onReplay={replayWorkflow}
+                  onViewLogs={() => {
+                    setIsViewingLogs(true);
+                    setIsCliExpanded(true);
+                  }}
+                />
+              ),
+              timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
             }
-          });
+          ]);
         }, 1000);
       }
       

@@ -177,7 +177,7 @@ export const CliLogViewer: React.FC<CliLogViewerProps> = ({
               </div>
               <div className="pl-4 border-l border-primary/20 space-y-3">
                 <div className={`flex items-center justify-between transition-opacity duration-300 ${logAnimationStep >= 7 ? "opacity-100" : "opacity-40"}`}>
-                  <span className="text-foreground flex items-center gap-1.5"><ShieldAlert className="w-3.5 h-3.5 text-yellow-500"/> Risk Mgmt</span>
+                  <span className="text-foreground flex items-center gap-1.5"><Scale className="w-3.5 h-3.5 text-green-500"/> Trader</span>
                   {logAnimationStep >= 9 ? (
                     <Badge variant="outline" className="text-[10px] bg-green-500/10 text-green-500 border-green-500/30">done</Badge>
                   ) : logAnimationStep >= 8 ? (
@@ -187,7 +187,7 @@ export const CliLogViewer: React.FC<CliLogViewerProps> = ({
                   )}
                 </div>
                 <div className={`flex items-center justify-between transition-opacity duration-300 ${logAnimationStep >= 8 ? "opacity-100" : "opacity-40"}`}>
-                  <span className="text-foreground flex items-center gap-1.5"><Briefcase className="w-3.5 h-3.5 text-yellow-500"/> Port. Mgr</span>
+                  <span className="text-foreground flex items-center gap-1.5"><ShieldAlert className="w-3.5 h-3.5 text-yellow-500"/> Risk Mgmt</span>
                   {logAnimationStep >= 10 ? (
                     <Badge variant="outline" className="text-[10px] bg-green-500/10 text-green-500 border-green-500/30">done</Badge>
                   ) : logAnimationStep >= 9 ? (
@@ -197,7 +197,7 @@ export const CliLogViewer: React.FC<CliLogViewerProps> = ({
                   )}
                 </div>
                 <div className={`flex items-center justify-between transition-opacity duration-300 ${logAnimationStep >= 9 ? "opacity-100" : "opacity-40"}`}>
-                  <span className="text-foreground flex items-center gap-1.5"><Scale className="w-3.5 h-3.5 text-green-500"/> Trader</span>
+                  <span className="text-foreground flex items-center gap-1.5"><Briefcase className="w-3.5 h-3.5 text-yellow-500"/> Port. Mgr</span>
                   {logAnimationStep >= 11 ? (
                     <Badge variant="outline" className="text-[10px] bg-green-500/10 text-green-500 border-green-500/30">done</Badge>
                   ) : logAnimationStep >= 10 ? (
@@ -263,6 +263,7 @@ export const CliLogViewer: React.FC<CliLogViewerProps> = ({
                   <th className="py-2 w-[80px] font-normal hidden sm:table-cell">Time</th>
                   <th className="py-2 w-[120px] font-normal">Agent</th>
                   <th className="py-2 w-[70px] font-normal hidden md:table-cell">Type</th>
+                  <th className="py-2 w-[90px] font-normal hidden lg:table-cell">Model</th>
                   <th className="py-2 font-normal">Content</th>
                 </tr>
               </thead>
@@ -273,6 +274,13 @@ export const CliLogViewer: React.FC<CliLogViewerProps> = ({
                     <td className="py-3 text-foreground font-semibold truncate">{log.agent}</td>
                     <td className="py-3 hidden md:table-cell truncate">
                       <span className="text-pink-500 bg-pink-500/10 px-1.5 py-0.5 rounded">{log.type}</span>
+                    </td>
+                    <td className="py-3 hidden lg:table-cell truncate">
+                      {log.model && log.model !== 'unknown' ? (
+                        <span className="text-cyan-500 bg-cyan-500/10 px-1.5 py-0.5 rounded text-[10px] uppercase border border-cyan-500/20">{log.model}</span>
+                      ) : (
+                        <span className="text-muted-foreground/50">-</span>
+                      )}
                     </td>
                     <td className="py-3 text-green-400 break-words whitespace-normal pr-2">
                       <div className="markdown-terminal text-green-400 [&_p]:mb-2 [&_p:last-child]:mb-0 [&_ul]:list-disc [&_ul]:ml-4 [&_ul]:mb-2 [&_ol]:list-decimal [&_ol]:ml-4 [&_ol]:mb-2 [&_h1]:text-lg [&_h1]:font-bold [&_h2]:font-bold [&_h3]:font-bold [&_code]:bg-black/50 [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded [&_pre]:bg-black/50 [&_pre]:p-2 [&_pre]:rounded [&_pre]:mb-2 [&_a]:text-cyan-400 [&_blockquote]:border-l-2 [&_blockquote]:border-green-600 [&_blockquote]:pl-2 [&_blockquote]:text-green-500 [&_table]:w-full [&_table]:my-2 [&_th]:border [&_th]:border-primary/20 [&_th]:p-1 [&_th]:bg-primary/10 [&_td]:border [&_td]:border-primary/20 [&_td]:p-1">

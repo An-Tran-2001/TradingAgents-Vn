@@ -1,11 +1,12 @@
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
 import { AppSidebar } from "@/components/app-sidebar";
 import { SiteHeader } from "@/components/site-header";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { ThemeCustomizer } from "@/components/theme-customizer";
 import { useSidebarConfig } from "@/hooks/use-sidebar-config";
+import { useAuthStore } from "@/store/authStore";
 
 export default function DashboardLayout({
   children,
@@ -14,6 +15,14 @@ export default function DashboardLayout({
 }) {
   const [themeCustomizerOpen, setThemeCustomizerOpen] = React.useState(false);
   const { config } = useSidebarConfig();
+  const { fetchUser, user } = useAuthStore();
+
+  // Fetch user data on mount if not already loaded
+  useEffect(() => {
+    if (!user) {
+      fetchUser();
+    }
+  }, [fetchUser, user]);
 
   return (
     <SidebarProvider

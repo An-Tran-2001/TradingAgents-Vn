@@ -16,6 +16,7 @@ class Job(Base):
     start_date = Column(DateTime(timezone=True), nullable=False)
     end_date = Column(DateTime(timezone=True), nullable=True)
     status = Column(String, default="active") # active, paused
+    config = Column(JSON, nullable=True) # Analysis Configuration params
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
     user = relationship("User", back_populates="jobs")

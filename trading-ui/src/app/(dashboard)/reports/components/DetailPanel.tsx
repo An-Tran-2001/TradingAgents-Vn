@@ -1,7 +1,7 @@
 import React, { useState } from "react"
 import { 
   Clock, X, ArrowUpRight, ArrowDownRight, BrainCircuit, TrendingUp, 
-  AlertTriangle, Cpu, Minus, Target 
+  AlertTriangle, Cpu, Minus, Target, Trash2 
 } from "lucide-react"
 import { useLanguage } from "@/contexts/language-context"
 import { Button } from "@/components/ui/button"
@@ -36,6 +36,7 @@ interface DetailPanelProps {
   report: DayReport
   onClose: () => void
   onViewLogs: () => void
+  onRequestDelete?: (reportId: string | number) => void
 }
 
 export const DetailPanel: React.FC<DetailPanelProps> = ({
@@ -43,6 +44,7 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
   report,
   onClose,
   onViewLogs,
+  onRequestDelete,
 }) => {
   const { t } = useLanguage()
   const [tab, setTab] = useState<"overview" | "agents" | "forecast">("overview")
@@ -199,28 +201,22 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
         
         {tab === "agents" && (
           <div className="p-4 space-y-2">
-            {(["Analyst", "Research", "Execution"] as const).map(team => {
-              const teamLabel = team === "Analyst" 
-                ? t("reports.analystTeam") 
-                : team === "Research" 
-                  ? t("reports.researchTeam") 
-                  : t("reports.executionTeam")
-              
-              return (
+            {report.agentOutputs && report.agentOutputs.length > 0 ? (
+              Array.from(new Set(report.agentOutputs.map(a => a.team))).map(team => (
                 <div key={team}>
                   <div className={`text-[10px] font-bold uppercase tracking-widest mb-2 mt-2 px-1 ${
-                    team === "Analyst" ? "text-cyan-400" : team === "Research" ? "text-pink-400" : "text-green-400"
+                    team.includes("Analyst") ? "text-cyan-400" : team.includes("Research") ? "text-pink-400" : "text-green-400"
                   }`}>
-                    {teamLabel}
+                    {team} Team
                   </div>
                   {report.agentOutputs.filter(a => a.team === team).map((a, i) => (
-                    <div key={i} className={`mb-2 p-3 rounded-xl border ${TEAM_COLOR[team]} bg-opacity-5`}>
+                    <div key={i} className={`mb-2 p-3 rounded-xl border ${TEAM_COLOR[team] || "text-foreground bg-muted/10 border-border/20"} bg-opacity-5`}>
                       <div className="flex items-center justify-between mb-1.5">
                         <span className="text-xs font-semibold text-foreground">{a.agent}</span>
                         <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 ${
-                          REC[a.recommendation].bg
-                        } ${REC[a.recommendation].color} border ${REC[a.recommendation].border}`}>
-                          {REC[a.recommendation].icon} {a.recommendation} {a.confidence}%
+                          REC[a.recommendation]?.bg || "bg-muted"
+                        } ${REC[a.recommendation]?.color || "text-foreground"} border ${REC[a.recommendation]?.border || "border-border"}`}>
+                          {REC[a.recommendation]?.icon} {a.recommendation} {a.confidence}%
                         </span>
                       </div>
                       <div className="text-xs text-muted-foreground leading-relaxed markdown-terminal [&_p]:mb-1 [&_p:last-child]:mb-0 [&_ul]:list-disc [&_ul]:ml-4 [&_ol]:list-decimal [&_ol]:ml-4">
@@ -229,8 +225,13 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
                     </div>
                   ))}
                 </div>
-              )
-            })}
+              ))
+            ) : (
+              <div className="flex flex-col items-center justify-center p-8 text-muted-foreground gap-3">
+                <BrainCircuit className="w-8 h-8 opacity-20" />
+                <div className="text-sm">No agent outputs available</div>
+              </div>
+            )}
           </div>
         )}
         
@@ -299,17 +300,17 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
                             : <Minus className="w-3 h-3 text-muted-foreground"/>}
                       </div>
                       <div className="flex-1 text-[10px] text-muted-foreground/60">
-                        {ticker.currency}{f.low.toLocaleString()} – {ticker.currency}{f.high.toLocaleString()}
+                        {ticker.currency}{f.low?.toLocaleString() ?? "N/A"} – {ticker.currency}{f.high?.toLocaleString() ?? "N/A"}
                       </div>
                       <div className={`text-xs font-bold font-mono ${
                         f.signal === "UP" ? "text-green-400" : f.signal === "DOWN" ? "text-red-400" : "text-foreground"
                       }`}>
-                        {ticker.currency}{f.price.toLocaleString()}
+                        {ticker.currency}{f.price?.toLocaleString() ?? "N/A"}
                       </div>
                       <div className={`text-[10px] font-semibold w-12 text-right ${
-                        f.price > report.price ? "text-green-400" : f.price < report.price ? "text-red-400" : "text-muted-foreground"
+                        (f.price || 0) > (report.price || 0) ? "text-green-400" : (f.price || 0) < (report.price || 0) ? "text-red-400" : "text-muted-foreground"
                       }`}>
-                        {f.price > report.price ? "+" : ""}{(((f.price - report.price) / report.price) * 100).toFixed(1)}%
+                        {(f.price || 0) > (report.price || 0) ? "+" : ""}{report.price ? ((((f.price || 0) - report.price) / report.price) * 100).toFixed(1) : "0.0"}%
                       </div>
                     </div>
                   ))}
@@ -318,10 +319,11 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
                 {/* Forecast Summary */}
                 <div className="p-3 rounded-xl bg-primary/5 border border-primary/20">
                   <div className="text-xs text-muted-foreground mb-1">{t("reports.projectedReturn")}</div>
-                  <div className={`text-xl font-bold ${report.forecast[report.forecast.length - 1].price > report.price ? "text-green-400" : "text-red-400"}`}>
-                    {report.forecast[report.forecast.length - 1].price > report.price ? "+" : ""}{(((report.forecast[report.forecast.length - 1].price - report.price) / report.price) * 100).toFixed(2)}%
+                  <div className={`text-xl font-bold ${(report.forecast[report.forecast.length - 1]?.price || 0) > (report.price || 0) ? "text-green-400" : "text-red-400"}`}>
+                    {(report.forecast[report.forecast.length - 1]?.price || 0) > (report.price || 0) ? "+" : ""}
+                    {report.price ? ((((report.forecast[report.forecast.length - 1]?.price || 0) - report.price) / report.price) * 100).toFixed(2) : "0.00"}%
                     <span className="text-sm font-normal text-muted-foreground ml-2">
-                      ({ticker.currency}{Math.abs(report.forecast[report.forecast.length - 1].price - report.price).toLocaleString()})
+                      ({ticker.currency}{Math.abs((report.forecast[report.forecast.length - 1]?.price || 0) - (report.price || 0)).toLocaleString()})
                     </span>
                   </div>
                 </div>
@@ -347,10 +349,11 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
         </Button>
         <Button 
           size="sm" 
-          className="flex-1 h-8 text-xs rounded-xl bg-muted/10 hover:bg-muted/20 text-muted-foreground border border-border/30" 
+          className="flex-1 h-8 text-xs rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/30" 
           variant="ghost"
+          onClick={() => onRequestDelete?.(report.id)}
         >
-          <BrainCircuit className="w-3.5 h-3.5 mr-1.5"/> {t("reports.reAnalyze")}
+          <Trash2 className="w-3.5 h-3.5 mr-1.5"/> {t("reports.delete") || "Delete"}
         </Button>
       </div>
     </div>

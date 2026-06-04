@@ -47,3 +47,25 @@ async def get_report_logs(
         raise HTTPException(status_code=404, detail="Report not found")
         
     return await service.get_report_logs(report_id)
+
+@router.delete("/{report_id}", summary="Soft delete a report")
+async def delete_report(
+    report_id: int,
+    current_user: User = Depends(get_current_user),
+    service: ReportService = Depends()
+):
+    success = await service.delete_report(report_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Report not found or already archived")
+    return {"message": "Report deleted successfully"}
+
+@router.delete("/tickers/{ticker}", summary="Soft delete all reports for a ticker")
+async def delete_ticker_reports(
+    ticker: str,
+    current_user: User = Depends(get_current_user),
+    service: ReportService = Depends()
+):
+    count = await service.delete_ticker_reports(ticker)
+    if count == 0:
+        raise HTTPException(status_code=404, detail="No reports found for this ticker")
+    return {"message": f"Successfully deleted {count} reports for {ticker}"}

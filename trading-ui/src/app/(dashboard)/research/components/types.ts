@@ -14,4 +14,5 @@ export type AgentLog = {
   agent: string;
   type: string;
   content: string;
+  model?: string;
 }

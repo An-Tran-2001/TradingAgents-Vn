@@ -7,21 +7,14 @@ import { useLanguage } from "@/contexts/language-context"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { TradingJob } from "./types"
 
-const durationChartData = [
-  { name: 'Mon', duration: 120 },
-  { name: 'Tue', duration: 150 },
-  { name: 'Wed', duration: 180 },
-  { name: 'Thu', duration: 140 },
-  { name: 'Fri', duration: 210 },
-  { name: 'Sat', duration: 90 },
-  { name: 'Sun', duration: 110 },
-]
+
 
 interface JobsMetricsProps {
   jobs: TradingJob[]
+  metrics: any
 }
 
-export const JobsMetrics: React.FC<JobsMetricsProps> = ({ jobs }) => {
+export const JobsMetrics: React.FC<JobsMetricsProps> = ({ jobs, metrics }) => {
   const { t } = useLanguage()
 
   return (
@@ -35,8 +28,12 @@ export const JobsMetrics: React.FC<JobsMetricsProps> = ({ jobs }) => {
             <Activity className="h-4 w-4 text-cyan-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">142,500</div>
-            <p className="text-xs text-muted-foreground mt-1">~ $0.42 spent today</p>
+            <div className="text-2xl font-bold">
+              {metrics ? metrics.token_usage_24h.toLocaleString() : "..."}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              ~ ${metrics ? metrics.cost_24h.toFixed(2) : "0.00"} spent today
+            </p>
           </CardContent>
         </Card>
         
@@ -57,9 +54,12 @@ export const JobsMetrics: React.FC<JobsMetricsProps> = ({ jobs }) => {
             <AlertTriangle className="h-4 w-4 text-yellow-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-yellow-500">2 Warnings</div>
-            <p className="text-xs text-muted-foreground mt-1 text-green-500 flex items-center gap-1">
-              <CheckCircle2 className="w-3 h-3"/> 0 Critical Errors
+            <div className="text-2xl font-bold text-yellow-500">
+              {metrics ? metrics.warnings : 0} Warnings
+            </div>
+            <p className={`text-xs mt-1 flex items-center gap-1 ${metrics?.critical_errors > 0 ? 'text-destructive' : 'text-green-500'}`}>
+              {metrics?.critical_errors === 0 ? <CheckCircle2 className="w-3 h-3"/> : <AlertTriangle className="w-3 h-3"/>}
+              {metrics ? metrics.critical_errors : 0} Critical Errors
             </p>
           </CardContent>
         </Card>
@@ -86,7 +86,7 @@ export const JobsMetrics: React.FC<JobsMetricsProps> = ({ jobs }) => {
           </CardHeader>
           <CardContent className="flex-1 pb-4 px-2 min-h-[160px]">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={durationChartData}>
+              <BarChart data={metrics?.duration_chart || []}>
                 <CartesianGrid strokeDasharray="3 3" opacity={0.1} vertical={false} />
                 <XAxis dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
                 <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `${val}m`} width={35} />

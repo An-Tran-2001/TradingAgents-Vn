@@ -11,54 +11,15 @@ import { JobFormSheet } from "./components/JobFormSheet"
 import { JobLogDialog } from "./components/JobLogDialog"
 import { TradingJob } from "./components/types"
 
-const initialJobs: TradingJob[] = [
-  {
-    id: "job-1",
-    ticker: "BTC-USD",
-    frequency: "Daily (00:00 UTC)",
-    depth: "Deep",
-    reasoning: "High",
-    agents: ["Market Analyst", "Bull Researcher", "Bear Researcher", "Research Manager", "Trader"],
-    startDate: "2026-06-01",
-    endDate: "",
-    status: "active",
-    lastRun: "2 hours ago",
-    nextRun: "in 22 hours",
-    history: ["success", "success", "warning", "success", "success", "success", "success"]
-  },
-  {
-    id: "job-2",
-    ticker: "AAPL",
-    frequency: "Weekly (Mon 09:30 EST)",
-    depth: "Medium",
-    reasoning: "Medium",
-    agents: ["Market Analyst"],
-    startDate: "2026-05-15",
-    endDate: "2026-12-31",
-    status: "paused",
-    lastRun: "3 days ago",
-    nextRun: "-",
-    history: ["success", "success", "failed", "success", "success", "none", "none"]
-  },
-  {
-    id: "job-3",
-    ticker: "ETH-USD",
-    frequency: "Every 4 Hours",
-    depth: "Shallow",
-    reasoning: "Low",
-    agents: ["Market Analyst", "Trader"],
-    startDate: "2026-06-01",
-    endDate: "",
-    status: "active",
-    lastRun: "10 mins ago",
-    nextRun: "in 3h 50m",
-    history: ["warning", "success", "success", "success", "success", "success", "success"]
-  }
-]
+import { fetchJobs, fetchJobMetrics, createJob, updateJob, deleteJob } from "./api"
+import { toast } from "sonner"
+import { Loader2 } from "lucide-react"
 
 export default function JobsPage() {
   const { t } = useLanguage()
-  const [jobs, setJobs] = useState<TradingJob[]>(initialJobs)
+  const [jobs, setJobs] = useState<TradingJob[]>([])
+  const [metrics, setMetrics] = useState<any>(null)
+  const [isLoading, setIsLoading] = useState(true)
   
   // Create / Edit Sheet State
   const [isSheetOpen, setIsSheetOpen] = useState(false)
@@ -78,26 +39,59 @@ export default function JobsPage() {
     setIsSheetOpen(true)
   }
 
-  const handleDelete = (id: string) => {
-    if (confirm("Are you sure you want to delete this scheduled job?")) {
-      setJobs(jobs.filter(j => j.id !== id))
+  React.useEffect(() => {
+    loadJobs()
+  }, [])
+
+  const loadJobs = async () => {
+    try {
+      setIsLoading(true)
+      const [jobsData, metricsData] = await Promise.all([
+        fetchJobs(),
+        fetchJobMetrics()
+      ])
+      setJobs(jobsData)
+      setMetrics(metricsData)
+    } catch (error) {
+      console.error("Failed to load jobs", error)
+      toast.error(t("common.error") || "Failed to load scheduled jobs")
+    } finally {
+      setIsLoading(false)
     }
   }
 
-  const handleToggleStatus = (id: string) => {
-    setJobs(jobs.map(j => {
-      if (j.id === id) {
-        return {
-          ...j,
-          status: j.status === "active" ? "paused" : "active",
-          nextRun: j.status === "active" ? "-" : "Pending schedule"
-        }
+  const handleDelete = async (id: string) => {
+    if (confirm("Are you sure you want to delete this scheduled job?")) {
+      try {
+        await deleteJob(id)
+        toast.success("Job deleted successfully")
+        setJobs(jobs.filter(j => j.id !== id))
+        const metricsData = await fetchJobMetrics()
+        setMetrics(metricsData)
+      } catch (error) {
+        console.error("Failed to delete job", error)
+        toast.error("Failed to delete job")
       }
-      return j
-    }))
+    }
   }
 
-  const handleSave = (formData: {
+  const handleToggleStatus = async (id: string) => {
+    const job = jobs.find(j => j.id === id)
+    if (!job) return
+    const newStatus = job.status === "active" ? "paused" : "active"
+    try {
+      const updatedJob = await updateJob(id, { ...job, status: newStatus })
+      setJobs(jobs.map(j => (j.id === id ? updatedJob : j)))
+      toast.success(`Job ${newStatus === "active" ? "resumed" : "paused"}`)
+      const metricsData = await fetchJobMetrics()
+      setMetrics(metricsData)
+    } catch (error) {
+      console.error("Failed to update status", error)
+      toast.error("Failed to change job status")
+    }
+  }
+
+  const handleSave = async (formData: {
     ticker: string
     frequency: string
     depth: string
@@ -106,24 +100,25 @@ export default function JobsPage() {
     endDate: string
     agents: string[]
   }) => {
-    if (editingJob) {
-      setJobs(jobs.map(j => j.id === editingJob.id ? {
-        ...j,
-        ...formData
-      } : j))
-    } else {
-      const newJob: TradingJob = {
-        id: `job-${Date.now()}`,
-        ...formData,
-        status: "active",
-        lastRun: "Never",
-        nextRun: "Pending schedule",
-        history: ["none", "none", "none", "none", "none", "none", "none"]
+    try {
+      if (editingJob) {
+        const updatedJob = await updateJob(editingJob.id, { ...editingJob, ...formData })
+        setJobs(jobs.map(j => j.id === editingJob.id ? updatedJob : j))
+        toast.success("Job updated successfully")
+        const metricsData = await fetchJobMetrics()
+        setMetrics(metricsData)
+      } else {
+        const newJob = await createJob(formData)
+        setJobs([newJob, ...jobs])
+        const metricsData = await fetchJobMetrics()
+        setMetrics(metricsData)
+        toast.success("Job scheduled successfully")
       }
-      setJobs([...jobs, newJob])
+      setIsSheetOpen(false)
+    } catch (error) {
+      console.error("Failed to save job", error)
+      toast.error("Failed to save scheduled job")
     }
-    
-    setIsSheetOpen(false)
   }
 
   const viewLogs = (job: TradingJob) => {
@@ -158,16 +153,22 @@ export default function JobsPage() {
         </div>
 
         {/* Top Metrics & Chart Grid */}
-        <JobsMetrics jobs={jobs} />
+        <JobsMetrics jobs={jobs} metrics={metrics} />
 
         {/* Data Table */}
-        <JobsTable 
-          jobs={jobs}
-          onViewLogs={viewLogs}
-          onToggleStatus={handleToggleStatus}
-          onEdit={openEditSheet}
-          onDelete={handleDelete}
-        />
+        {isLoading ? (
+          <div className="flex flex-1 items-center justify-center min-h-[300px]">
+            <Loader2 className="h-8 w-8 animate-spin text-primary/50" />
+          </div>
+        ) : (
+          <JobsTable 
+            jobs={jobs}
+            onViewLogs={viewLogs}
+            onToggleStatus={handleToggleStatus}
+            onEdit={openEditSheet}
+            onDelete={handleDelete}
+          />
+        )}
       </div>
 
       {/* Create / Edit Sheet */}

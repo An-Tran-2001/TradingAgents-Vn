@@ -57,8 +57,64 @@ def _fetch_duckduckgo_results(query: str, max_results: int) -> list[tuple[str, s
     parser.feed(html)
     return parser.results[:max_results]
 
+class _GoogleScrapeParser(HTMLParser):
+    def __init__(self, max_results: int = 5):
+        super().__init__()
+        self.max_results = max_results
+        self.results = []
+        self._current_href = None
+        self._inside_h3 = False
+        self._current_title = []
 
-def _fetch_google_search_results(query: str, api_key: str) -> str:
+    def handle_starttag(self, tag, attrs):
+        attr_map = {name: value for name, value in attrs}
+        if tag == "a":
+            href = attr_map.get("href", "")
+            if href.startswith("/url?q="):
+                import urllib.parse
+                parsed = urllib.parse.urlparse(href)
+                self._current_href = urllib.parse.parse_qs(parsed.query).get("q", [""])[0]
+            elif href.startswith("http") and "google.com" not in href:
+                self._current_href = href
+        elif tag == "h3":
+            self._inside_h3 = True
+            self._current_title = []
+
+    def handle_endtag(self, tag):
+        if tag == "h3" and self._inside_h3:
+            self._inside_h3 = False
+            title = "".join(self._current_title).strip()
+            if title and self._current_href:
+                # Avoid duplicates
+                if not any(r[1] == self._current_href for r in self.results):
+                    self.results.append((title, self._current_href))
+        elif tag == "a":
+            pass
+
+    def handle_data(self, data):
+        if self._inside_h3:
+            self._current_title.append(data)
+
+
+def _fetch_google_html_results(query: str, max_results: int) -> list[tuple[str, str]]:
+    url = "https://www.google.com/search?q=" + urllib.parse.quote(query)
+    req = urllib.request.Request(
+        url,
+        headers={
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "Accept-Language": "en-US,en;q=0.5"
+        }
+    )
+    data = urllib.request.urlopen(req, timeout=10)
+    html = data.read().decode("utf-8", errors="ignore")
+    
+    parser = _GoogleScrapeParser(max_results=max_results)
+    parser.feed(html)
+    return parser.results[:max_results]
+
+
+def _fetch_google_search_results(query: str, api_key: str, model: str) -> str:
     """Fetch search results using Gemini's native Google Search grounding."""
     try:
         from google import genai
@@ -68,7 +124,7 @@ def _fetch_google_search_results(query: str, api_key: str) -> str:
         tool = types.Tool(google_search=types.GoogleSearch())
 
         response = client.models.generate_content(
-            model="gemini-2.5-flash",
+            model=model or "gemini-2.5-flash",
             contents=f"Search the web for: {query}. Provide a concise but comprehensive summary of the results.",
             config=types.GenerateContentConfig(tools=[tool], temperature=0.2),
         )
@@ -96,11 +152,14 @@ def _fetch_google_search_results(query: str, api_key: str) -> str:
         raise Exception(f"Google Search failed: {e}")
 
 
+from langchain_core.runnables import RunnableConfig
+
 @tool
 def search_web(
     query: str,
     max_results: Optional[int] = 5,
     source: Optional[str] = "duckduckgo",
+    config: RunnableConfig = None,
 ) -> str:
     """
     Perform a web search and return the top results.
@@ -116,19 +175,32 @@ def search_web(
     if not query or not query.strip():
         return "No query provided."
 
-    # Try Google Native Search if API key is present
-    google_api_key = os.environ.get("GEMINI_API_KEY") or os.environ.get(
-        "GOOGLE_API_KEY"
-    )
-    if google_api_key:
+    # Extract context injected by the orchestrator/runner
+    configurable = config.get("configurable", {}) if config else {}
+    provider = configurable.get("provider", "")
+    model = configurable.get("model", "gemini-2.5-flash")
+    api_key = configurable.get("api_key") or os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
+
+    # Try Google Native Search ONLY if provider is Google
+    if provider.lower() == "google" and api_key:
         try:
-            return _fetch_google_search_results(query, google_api_key)
+            return _fetch_google_search_results(query, api_key, model)
         except Exception as e:
             # Fall back to DuckDuckGo if Google search fails
             pass
 
     if max_results is None:
         max_results = 5
+
+    # Try scraping Google HTML directly as first fallback
+    try:
+        results = _fetch_google_html_results(query, max_results=max_results)
+        if results:
+            formatted = [f"{idx + 1}. {title} — {url}" for idx, (title, url) in enumerate(results)]
+            return "\n".join(formatted)
+    except Exception as e:
+        # Fall back to DuckDuckGo if HTML scraping fails
+        pass
 
     source_key = str(source or "duckduckgo").strip().lower()
     if source_key != "duckduckgo":

@@ -13,4 +13,5 @@ export interface TradingJob {
   lastRun: string
   nextRun: string
   history: ("success" | "warning" | "failed" | "none")[]
+  config?: any
 }

@@ -64,9 +64,9 @@ class ReportForecast(Base):
     id = Column(Integer, primary_key=True, index=True)
     report_id = Column(Integer, ForeignKey("reports.id"))
     day_offset = Column(String, nullable=False) # e.g. "D+1", "D+2"
-    price_low = Column(Float, nullable=False)
-    price_high = Column(Float, nullable=False)
-    price_target = Column(Float, nullable=False)
+    price_low = Column(Float, nullable=True)
+    price_high = Column(Float, nullable=True)
+    price_target = Column(Float, nullable=True)
     signal = Column(String, nullable=False) # UP, DOWN, FLAT
 
     report = relationship("Report", back_populates="forecasts")

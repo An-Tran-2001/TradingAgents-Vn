@@ -6,10 +6,12 @@ import { TickerList } from "./components/TickerList"
 import { ReportsList } from "./components/ReportsList"
 import { DetailPanel } from "./components/DetailPanel"
 import { ReportCliDialog } from "./components/ReportCliDialog"
-import { fetchTickers, fetchReportsByTicker } from "./api"
-import { Loader2, Database } from "lucide-react"
+import { fetchTickers, fetchReportsByTicker, deleteReport, deleteTickerReports } from "./api"
+import { Loader2, Database, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 import { useLanguage } from "@/contexts/language-context"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Button } from "@/components/ui/button"
 
 export default function ReportsPage() {
   const [tickers, setTickers] = useState<TickerInfo[]>([])
@@ -19,7 +21,40 @@ export default function ReportsPage() {
   const [isCliOpen, setIsCliOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [hasError, setHasError] = useState(false)
+  const [deleteTarget, setDeleteTarget] = useState<{ type: 'report' | 'ticker', id: string | number, name: string } | null>(null)
   const { t } = useLanguage()
+
+  const handleConfirmDelete = async () => {
+    if (!deleteTarget) return
+    
+    try {
+      if (deleteTarget.type === 'report') {
+        await deleteReport(deleteTarget.id)
+        toast.success(t("reports.reportDeletedSuccess") || "Report deleted successfully")
+        setReports(prev => prev.filter(r => r.id !== deleteTarget.id))
+        if (selectedReport?.id === deleteTarget.id) setSelectedReport(null)
+      } else {
+        await deleteTickerReports(deleteTarget.name)
+        toast.success(t("reports.tickerDeletedSuccess") || "Ticker deleted successfully")
+      }
+      
+      const updatedTickers = await fetchTickers()
+      setTickers(updatedTickers)
+      
+      if (deleteTarget.type === 'ticker' && selectedTicker?.ticker === deleteTarget.name) {
+        setSelectedTicker(updatedTickers[0] || null)
+        setSelectedReport(null)
+      } else if (selectedTicker && !updatedTickers.find(t => t.ticker === selectedTicker.ticker)) {
+        setSelectedTicker(updatedTickers[0] || null)
+        setSelectedReport(null)
+      }
+    } catch (err) {
+      toast.error(t("reports.deleteFailed") || "Failed to delete")
+      console.error(err)
+    } finally {
+      setDeleteTarget(null)
+    }
+  }
 
   useEffect(() => {
     async function loadData() {
@@ -90,6 +125,7 @@ export default function ReportsPage() {
           setSelectedTicker(ticker)
           setSelectedReport(null)
         }}
+        onRequestDelete={(ticker) => setDeleteTarget({ type: 'ticker', id: ticker.ticker, name: ticker.ticker })}
       />
 
       {/* CENTER: Report List feed */}
@@ -98,6 +134,7 @@ export default function ReportsPage() {
         reports={reports}
         selectedReport={selectedReport}
         onSelectReport={setSelectedReport}
+        onRequestDelete={(reportId) => setDeleteTarget({ type: 'report', id: reportId, name: 'Report' })}
       />
 
       {/* RIGHT: Detail Panel drawer */}
@@ -107,6 +144,7 @@ export default function ReportsPage() {
           report={selectedReport} 
           onClose={() => setSelectedReport(null)}
           onViewLogs={() => setIsCliOpen(true)}
+          onRequestDelete={(reportId) => setDeleteTarget({ type: 'report', id: reportId, name: 'Report' })}
         />
       )}
 
@@ -115,6 +153,33 @@ export default function ReportsPage() {
         isOpen={isCliOpen} 
         onClose={() => setIsCliOpen(false)} 
       />
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <DialogContent className="sm:max-w-md border-border/50 bg-background/95 backdrop-blur-xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Trash2 className="w-5 h-5 text-red-500" />
+              {deleteTarget?.type === 'ticker' 
+                ? t("reports.confirmDeleteTickerTitle") || "Delete Ticker" 
+                : t("reports.confirmDeleteReportTitle") || "Delete Report"}
+            </DialogTitle>
+            <DialogDescription className="text-muted-foreground pt-3">
+              {deleteTarget?.type === 'ticker' 
+                ? t("reports.confirmDeleteTickerDesc") || `Are you sure you want to hide all reports for ${deleteTarget.name}? They will remain in your chat history.`
+                : t("reports.confirmDeleteReportDesc") || "Are you sure you want to hide this report? It will remain in your chat history."}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="sm:justify-end gap-2 mt-4">
+            <Button type="button" variant="ghost" onClick={() => setDeleteTarget(null)}>
+              {t("common.cancel") || "Cancel"}
+            </Button>
+            <Button type="button" variant="destructive" onClick={handleConfirmDelete}>
+              {t("common.confirm") || "Confirm"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

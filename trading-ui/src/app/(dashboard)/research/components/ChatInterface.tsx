@@ -2,18 +2,19 @@ import React, { useState, useEffect, useRef } from "react"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
 import { useLanguage } from "@/contexts/language-context"
-import { 
-  History, 
-  BrainCircuit, 
-  LineChart, 
-  Newspaper, 
-  BarChart3, 
-  Sparkles, 
-  User, 
-  Activity, 
-  Search, 
+import {
+  History,
+  BrainCircuit,
+  LineChart,
+  Newspaper,
+  BarChart3,
+  Sparkles,
+  User,
+  Activity,
+  Search,
   Send,
-  BookOpen
+  BookOpen,
+  Users
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Message } from "./types"
@@ -86,30 +87,41 @@ const MessageBubble = React.memo(({ msg }: { msg: Message }) => {
     }
   }
 
+  const isAgent = msg.role === "agent"
+  const isUser = msg.role === "user"
+  const isJSX = typeof msg.content !== 'string'
+
   return (
-    <div 
-      className={`flex gap-4 ${msg.role === "user" ? "flex-row-reverse" : "flex-row"} animate-in fade-in slide-in-from-bottom-2 duration-300`}
+    <div
+      className={`flex gap-4 ${isUser ? "flex-row-reverse" : "flex-row"} animate-in fade-in slide-in-from-bottom-2 duration-300`}
     >
       {/* Avatar */}
       <div className={`mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
-        msg.role === "user" 
-          ? "bg-muted text-muted-foreground" 
+        isUser
+          ? "bg-muted text-muted-foreground"
+          : isAgent
+          ? "bg-emerald-500/20 text-emerald-400 ring-1 ring-emerald-500/30"
           : "bg-primary text-primary-foreground shadow-[0_0_15px_rgba(var(--primary),0.4)]"
       }`}>
-        {msg.role === "user" ? <User className="h-4 w-4" /> : <Activity className="h-4 w-4" />}
+        {isUser ? <User className="h-4 w-4" /> : isAgent ? <Users className="h-4 w-4" /> : <Activity className="h-4 w-4" />}
       </div>
 
       {/* Message Bubble */}
-      <div className={`flex flex-col gap-1.5 ${msg.role === "user" ? "items-end" : "items-start"} w-full max-w-[85%]`}>
+      <div className={`flex flex-col gap-1.5 ${isUser ? "items-end" : "items-start"} ${isJSX ? "w-full" : "w-full max-w-[85%]"}`}>
         <div className="flex items-center gap-2 px-1">
-          <span className="text-sm font-semibold">
-            {msg.role === "user" ? "You" : msg.agentRole}
+          <span className={`text-sm font-semibold ${isAgent ? "text-emerald-400" : ""}`}>
+            {isUser ? "You" : msg.agentRole || "Assistant"}
           </span>
+          {isAgent && (
+            <span className="text-[10px] text-muted-foreground bg-emerald-400/10 border border-emerald-400/20 px-1.5 py-0.5 rounded-full">Research Team</span>
+          )}
         </div>
-        <div 
+        <div
           className={`text-[15px] leading-relaxed w-full prose prose-sm dark:prose-invert max-w-none ${
-            msg.role === "user"
+            isUser
               ? "bg-muted/50 px-5 py-3.5 rounded-2xl rounded-tr-sm inline-block w-auto"
+              : isJSX
+              ? "bg-card/40 backdrop-blur-sm border border-border/50 px-4 py-4 rounded-2xl rounded-tl-sm shadow-sm"
               : "bg-card/40 backdrop-blur-sm border border-border/50 px-6 py-5 rounded-2xl rounded-tl-sm shadow-sm"
           }`}
         >
