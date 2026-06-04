@@ -30,6 +30,8 @@ dependencies = [
     "tqdm>=4.67.1",
     "typing-extensions>=4.14.0",
     "yfinance>=1.4.1",
+    "playwright>=1.60.0",
+    "lxml>=5.4.0",
 ]
 
 [project.scripts]
