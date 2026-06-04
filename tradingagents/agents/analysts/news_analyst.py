@@ -4,6 +4,9 @@ from tradingagents.agents.utils.agent_utils import (
     get_global_news,
     get_language_instruction,
     get_news,
+    get_insider_transactions,
+    get_vn_market_news,
+    get_vn_official_announcements
 )
 from tradingagents.dataflows.config import get_config
 
@@ -18,10 +21,13 @@ def create_news_analyst(llm):
         tools = [
             get_news,
             get_global_news,
+            get_insider_transactions,
+            get_vn_market_news,
+            get_vn_official_announcements,
         ]
 
         system_message = (
-            f"You are a news researcher tasked with analyzing recent news and trends over the past week. Please write a comprehensive report of the current state of the world that is relevant for trading and macroeconomics. Use the available tools: get_news(query, start_date, end_date) for {asset_label}-specific or targeted news searches, and get_global_news(curr_date, look_back_days, limit) for broader macroeconomic news. Provide specific, actionable insights with supporting evidence to help traders make informed decisions."
+            f"You are a news researcher tasked with analyzing recent news and trends over the past week. Please write a comprehensive report of the current state of the world that is relevant for trading and macroeconomics. Use the available tools: get_news(query, start_date, end_date) for {asset_label}-specific or targeted news searches, and get_global_news(curr_date, look_back_days, limit) for broader macroeconomic news. If analyzing the Vietnam Market, also use get_vn_market_news, get_vn_official_announcements and get_insider_transactions to gather highly relevant domestic news and legal disclosures. Provide specific, actionable insights with supporting evidence to help traders make informed decisions."
             + """ Make sure to append a Markdown table at the end of the report to organize key points in the report, organized and easy to read."""
             + get_language_instruction()
         )

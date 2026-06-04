@@ -25,6 +25,17 @@ from .alpha_vantage import (
 from .alpha_vantage_common import AlphaVantageRateLimitError
 from .symbol_utils import NoMarketDataError
 
+from .vn_vendor import (
+    get_tcbs_stock_data,
+    get_cafef_news,
+    get_hose_announcements,
+    get_fiin_fundamentals,
+    get_fiin_balance_sheet,
+    get_fiin_cashflow,
+    get_fiin_income_statement,
+    get_official_insider_transactions,
+)
+
 # Configuration and routing logic
 from .config import get_config
 
@@ -62,6 +73,7 @@ TOOLS_CATEGORIES = {
 }
 
 VENDOR_LIST = [
+    "vn_vendor",
     "yfinance",
     "alpha_vantage",
 ]
@@ -70,6 +82,7 @@ VENDOR_LIST = [
 VENDOR_METHODS = {
     # core_stock_apis
     "get_stock_data": {
+        "vn_vendor": get_tcbs_stock_data,
         "alpha_vantage": get_alpha_vantage_stock,
         "yfinance": get_YFin_data_online,
     },
@@ -80,23 +93,28 @@ VENDOR_METHODS = {
     },
     # fundamental_data
     "get_fundamentals": {
+        "vn_vendor": get_fiin_fundamentals,
         "alpha_vantage": get_alpha_vantage_fundamentals,
         "yfinance": get_yfinance_fundamentals,
     },
     "get_balance_sheet": {
+        "vn_vendor": get_fiin_balance_sheet,
         "alpha_vantage": get_alpha_vantage_balance_sheet,
         "yfinance": get_yfinance_balance_sheet,
     },
     "get_cashflow": {
+        "vn_vendor": get_fiin_cashflow,
         "alpha_vantage": get_alpha_vantage_cashflow,
         "yfinance": get_yfinance_cashflow,
     },
     "get_income_statement": {
+        "vn_vendor": get_fiin_income_statement,
         "alpha_vantage": get_alpha_vantage_income_statement,
         "yfinance": get_yfinance_income_statement,
     },
     # news_data
     "get_news": {
+        "vn_vendor": get_cafef_news,
         "alpha_vantage": get_alpha_vantage_news,
         "yfinance": get_news_yfinance,
     },
@@ -105,6 +123,7 @@ VENDOR_METHODS = {
         "alpha_vantage": get_alpha_vantage_global_news,
     },
     "get_insider_transactions": {
+        "vn_vendor": get_official_insider_transactions,
         "alpha_vantage": get_alpha_vantage_insider_transactions,
         "yfinance": get_yfinance_insider_transactions,
     },

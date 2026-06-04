@@ -38,7 +38,16 @@ from tradingagents.agents.utils.agent_utils import (
     get_income_statement,
     get_news,
     get_insider_transactions,
-    get_global_news
+    get_global_news,
+    get_vietnam_macro,
+    get_vn_market_news,
+    get_vn_official_announcements,
+    get_vn_major_shareholders,
+    get_vn_etf_flow,
+    get_vn_sector_data,
+    get_vn_market_breadth,
+    get_vn_social_sentiment,
+    get_vn_realtime_trading_data_tool
 )
 
 from .checkpointer import checkpoint_step, clear_checkpoint, get_checkpointer, thread_id
@@ -177,12 +186,19 @@ class TradingAgentsGraph:
                     get_stock_data,
                     # Technical indicators
                     get_indicators,
+                    # Vietnam specific market tools
+                    get_vn_market_breadth,
+                    get_vn_sector_data,
+                    get_vn_etf_flow,
+                    get_vn_realtime_trading_data_tool,
                 ]
             ),
             "social": ToolNode(
                 [
                     # News tools for social media analysis
                     get_news,
+                    get_vn_market_news,
+                    get_vn_social_sentiment,
                 ]
             ),
             "news": ToolNode(
@@ -191,6 +207,8 @@ class TradingAgentsGraph:
                     get_news,
                     get_global_news,
                     get_insider_transactions,
+                    get_vn_market_news,
+                    get_vn_official_announcements,
                 ]
             ),
             "fundamentals": ToolNode(
@@ -200,6 +218,8 @@ class TradingAgentsGraph:
                     get_balance_sheet,
                     get_cashflow,
                     get_income_statement,
+                    get_vietnam_macro,
+                    get_vn_major_shareholders,
                 ]
             ),
         }

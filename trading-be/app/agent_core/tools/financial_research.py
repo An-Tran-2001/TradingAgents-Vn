@@ -19,11 +19,15 @@ def run_financial_research(ticker: str, analysis_date: str) -> str:
 
     Examples that SHOULD trigger this tool:
     - "Phân tích mã AAPL giúp tôi."
-    - "Tôi có nên mua cổ phiếu VCB ngay bây giờ không?"
-    - "Đánh giá toàn diện mã HPG."
+    - "Tôi có nên mua cổ phiếu VCB ngay bây giờ không?" -> (Call with ticker='VCB.VN')
+    - "Đánh giá toàn diện mã HPG." -> (Call with ticker='HPG.VN')
+
+    IMPORTANT TICKER FORMATTING RULES:
+    - For Vietnamese stocks (e.g., VCB, FPT, HPG, SSI, VND), you MUST append the `.VN` suffix to the ticker (e.g., `VCB.VN`, `FPT.VN`) because global financial APIs require it.
+    - For US stocks (e.g., AAPL, TSLA), use the standard ticker without any suffix.
 
     Args:
-        ticker (str): The exact stock/crypto symbol (e.g., 'AAPL', 'VCB', 'BTC-USD').
+        ticker (str): The exact stock/crypto symbol. (Remember to append .VN for Vietnam stocks!)
         analysis_date (str): The target date for analysis in 'YYYY-MM-DD' format.
     """
     # This tool acts as a routing signal in the Orchestrator.

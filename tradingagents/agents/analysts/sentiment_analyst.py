@@ -41,6 +41,7 @@ from tradingagents.agents.utils.structured import (
 )
 from tradingagents.dataflows.reddit import fetch_reddit_posts
 from tradingagents.dataflows.stocktwits import fetch_stocktwits_messages
+from tradingagents.agents.utils.vietnam_tools import get_vn_social_sentiment
 
 
 def _seven_days_back(trade_date: str) -> str:
@@ -69,6 +70,9 @@ def create_sentiment_analyst(llm):
         news_block = get_news.func(ticker, start_date, end_date)
         stocktwits_block = fetch_stocktwits_messages(ticker, limit=30)
         reddit_block = fetch_reddit_posts(ticker)
+        
+        # Thêm context đặc thù cho thị trường Việt Nam
+        vn_social_block = get_vn_social_sentiment.func(ticker)
 
         system_message = _build_system_message(
             ticker=ticker,
@@ -77,6 +81,7 @@ def create_sentiment_analyst(llm):
             news_block=news_block,
             stocktwits_block=stocktwits_block,
             reddit_block=reddit_block,
+            vn_social_block=vn_social_block,
         )
 
         prompt = ChatPromptTemplate.from_messages(
@@ -126,6 +131,7 @@ def _build_system_message(
     news_block: str,
     stocktwits_block: str,
     reddit_block: str,
+    vn_social_block: str = "",
 ) -> str:
     """Assemble the sentiment-analyst system message with structured data blocks."""
     return f"""You are a financial market sentiment analyst. Your task is to produce a comprehensive sentiment report for {ticker} covering the period from {start_date} to {end_date}, drawing on three complementary data sources that have already been collected for you.
@@ -152,6 +158,12 @@ Community discussion. Engagement signal via upvote score and comment count. Subr
 <start_of_reddit>
 {reddit_block}
 <end_of_reddit>
+
+### Vietnam Local Social Communities (FireAnt, F319, Facebook)
+Context relevant for Vietnam Market.
+<start_of_vn_social>
+{vn_social_block}
+<end_of_vn_social>
 
 ## How to analyze this data (best practices)
 

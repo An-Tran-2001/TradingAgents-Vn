@@ -26,6 +26,17 @@ from tradingagents.agents.utils.news_data_tools import (
 from tradingagents.agents.utils.market_data_validation_tools import (
     get_verified_market_snapshot
 )
+from tradingagents.agents.utils.vietnam_tools import (
+    get_vietnam_macro,
+    get_vn_market_news,
+    get_vn_official_announcements,
+    get_vn_major_shareholders,
+    get_vn_etf_flow,
+    get_vn_sector_data,
+    get_vn_market_breadth,
+    get_vn_social_sentiment,
+    get_vn_realtime_trading_data_tool
+)
 
 logger = logging.getLogger(__name__)
 

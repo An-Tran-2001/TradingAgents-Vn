@@ -22,6 +22,7 @@ from app.agent_core.tools import (
     get_current_datetime,
     scrape_links,
     query_past_report,
+    search_web,
 )
 
 logger = logging.getLogger(__name__)
@@ -564,8 +565,9 @@ Use your tools ONLY to fetch the current live price and date to ground the repor
                     eval_tools = [
                         get_current_stock_price,
                         get_current_datetime,
-                        scrape_links,
                         query_past_report,
+                        search_web,
+                        scrape_links,
                     ]
                     react_agent = create_react_agent(llm_client, tools=eval_tools)
 

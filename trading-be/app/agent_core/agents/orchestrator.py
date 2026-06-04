@@ -13,6 +13,17 @@ from app.agent_core.tools import (
     scrape_links,
     query_past_report,
 )
+from tradingagents.agents.utils.vietnam_tools import (
+    get_vn_major_shareholders,
+    get_vn_etf_flow,
+    get_vn_sector_data,
+    get_vn_market_breadth,
+    get_vn_social_sentiment,
+    get_vn_market_news,
+    get_vietnam_macro,
+    get_vn_official_announcements,
+    get_vn_realtime_trading_data_tool
+)
 from langsmith import traceable
 import langsmith
 
@@ -77,6 +88,16 @@ class OrchestratorAgent:
                 get_current_datetime,
                 scrape_links,
                 query_past_report,
+                # Vietnam tools
+                get_vn_major_shareholders,
+                get_vn_etf_flow,
+                get_vn_sector_data,
+                get_vn_market_breadth,
+                get_vn_social_sentiment,
+                get_vn_market_news,
+                get_vietnam_macro,
+                get_vn_official_announcements,
+                get_vn_realtime_trading_data_tool
             ]
 
             if self.websearch:
@@ -86,7 +107,8 @@ class OrchestratorAgent:
                 else:
                     tools.append(search_web)
 
-            self.llm_with_tools = self.llm.bind_tools(tools)
+            self.tools = tools
+            self.llm_with_tools = self.llm.bind_tools(self.tools)
         except Exception as e:
             logger.error(f"Failed to initialize Orchestrator LLM: {e}")
             raise e
@@ -123,6 +145,9 @@ class OrchestratorAgent:
                 "4. Partial Delivery: If full completion is impossible, deliver the best possible partial result.\n"
                 "5. Autonomous Inference: Infer non-critical missing parameters (e.g., assume today's date if omitted) to reduce unnecessary clarification.\n"
                 "6. Professionalism: Do not reveal internal reasoning, planning, or execution details. Verify the final response addresses the objective. Be concise, professional, and action-oriented.\n\n"
+                "TICKER FORMATTING RULES:\n"
+                "- When using tools for Vietnamese stocks (e.g., VCB, FPT, HPG), you MUST append `.VN` to the ticker (e.g., `VCB.VN`).\n"
+                "- For US or Global stocks (e.g., AAPL), do not append any suffix unless specified.\n\n"
                 f"CRITICAL: You MUST communicate and respond exclusively in the following language: {self.language}."
             )
         )
@@ -218,38 +243,6 @@ class OrchestratorAgent:
                                     content="Failed to load user guide.",
                                 )
                             )
-                    elif tool_call["name"] == "get_current_stock_price":
-                        try:
-                            yield {
-                                "type": "orchestrator_tool_start",
-                                "tool": "get_current_stock_price",
-                                "args": tool_call["args"],
-                            }
-                            result = get_current_stock_price.invoke(tool_call["args"])
-                            messages.append(
-                                ToolMessage(
-                                    tool_call_id=tool_call["id"],
-                                    name=tool_call["name"],
-                                    content=str(result),
-                                )
-                            )
-                            yield {
-                                "type": "orchestrator_tool_end",
-                                "tool": "get_current_stock_price",
-                                "result": str(result),
-                            }
-                        except Exception as e:
-                            logger.error(
-                                f"Failed to process get_current_stock_price tool: {e}"
-                            )
-                            messages.append(
-                                ToolMessage(
-                                    tool_call_id=tool_call["id"],
-                                    name=tool_call["name"],
-                                    content="Failed to fetch stock price.",
-                                )
-                            )
-
                     elif tool_call["name"] == "search_web":
                         try:
                             yield {
@@ -288,106 +281,61 @@ class OrchestratorAgent:
                                     content="Failed to perform web search.",
                                 )
                             )
-                    elif tool_call["name"] == "scrape_links":
-                        try:
-                            yield {
-                                "type": "orchestrator_tool_start",
-                                "tool": "scrape_links",
-                                "args": tool_call["args"],
-                            }
-                            # Using await since the tool is async and stream_response is async
-                            result = await scrape_links.ainvoke(tool_call["args"])
-                            messages.append(
-                                ToolMessage(
-                                    tool_call_id=tool_call["id"],
-                                    name=tool_call["name"],
-                                    content=str(result),
-                                )
-                            )
-                            yield {
-                                "type": "orchestrator_tool_end",
-                                "tool": "scrape_links",
-                                "result": str(result),
-                            }
-                        except Exception as e:
-                            logger.error(f"Failed to process scrape_links tool: {e}")
-                            messages.append(
-                                ToolMessage(
-                                    tool_call_id=tool_call["id"],
-                                    name=tool_call["name"],
-                                    content="Failed to scrape links.",
-                                )
-                            )
-                    elif tool_call["name"] == "query_past_report":
-                        try:
-                            yield {
-                                "type": "orchestrator_tool_start",
-                                "tool": "query_past_report",
-                                "args": tool_call["args"],
-                            }
-                            # Using await since the tool is async
-                            result = await query_past_report.ainvoke(tool_call["args"])
-                            messages.append(
-                                ToolMessage(
-                                    tool_call_id=tool_call["id"],
-                                    name=tool_call["name"],
-                                    content=str(result),
-                                )
-                            )
-                            yield {
-                                "type": "orchestrator_tool_end",
-                                "tool": "query_past_report",
-                                "result": str(result),
-                            }
-                        except Exception as e:
-                            logger.error(f"Failed to process query_past_report tool: {e}")
-                            messages.append(
-                                ToolMessage(
-                                    tool_call_id=tool_call["id"],
-                                    name=tool_call["name"],
-                                    content="Failed to query past report.",
-                                )
-                            )
-                    elif tool_call["name"] == "get_current_datetime":
-                        try:
-                            yield {
-                                "type": "orchestrator_tool_start",
-                                "tool": "get_current_datetime",
-                                "args": tool_call["args"],
-                            }
-                            result = get_current_datetime.invoke(tool_call["args"])
-                            messages.append(
-                                ToolMessage(
-                                    tool_call_id=tool_call["id"],
-                                    name=tool_call["name"],
-                                    content=str(result),
-                                )
-                            )
-                            yield {
-                                "type": "orchestrator_tool_end",
-                                "tool": "get_current_datetime",
-                                "result": str(result),
-                            }
-                        except Exception as e:
-                            logger.error(
-                                f"Failed to process get_current_datetime tool: {e}"
-                            )
-                            messages.append(
-                                ToolMessage(
-                                    tool_call_id=tool_call["id"],
-                                    name=tool_call["name"],
-                                    content="Failed to fetch current date/time.",
-                                )
-                            )
                     else:
-                        logger.warning(f"Unhandled tool call: {tool_call['name']}")
-                        messages.append(
-                            ToolMessage(
-                                tool_call_id=tool_call["id"],
-                                name=tool_call["name"],
-                                content=f"Tool {tool_call['name']} not available or handled internally.",
+                        # Fallback for dynamic tools (Vietnam tools, get_current_stock_price, scrape_links, etc.)
+                        tool_func = None
+                        for t in self.tools:
+                            if hasattr(t, "name") and t.name == tool_call["name"]:
+                                tool_func = t
+                                break
+                            elif isinstance(t, dict) and t.get("type") == tool_call["name"]:
+                                tool_func = t
+                                break
+                                
+                        if tool_func:
+                            try:
+                                yield {
+                                    "type": "orchestrator_tool_start",
+                                    "tool": tool_call["name"],
+                                    "args": tool_call["args"],
+                                }
+                                # Call async or sync
+                                import asyncio
+                                if asyncio.iscoroutinefunction(tool_func.invoke):
+                                    result = await tool_func.ainvoke(tool_call["args"])
+                                else:
+                                    result = tool_func.invoke(tool_call["args"])
+                                    
+                                messages.append(
+                                    ToolMessage(
+                                        tool_call_id=tool_call["id"],
+                                        name=tool_call["name"],
+                                        content=str(result),
+                                    )
+                                )
+                                yield {
+                                    "type": "orchestrator_tool_end",
+                                    "tool": tool_call["name"],
+                                    "result": str(result),
+                                }
+                            except Exception as e:
+                                logger.error(f"Failed to process {tool_call['name']}: {e}")
+                                messages.append(
+                                    ToolMessage(
+                                        tool_call_id=tool_call["id"],
+                                        name=tool_call["name"],
+                                        content=f"Failed to execute {tool_call['name']}: {str(e)}",
+                                    )
+                                )
+                        else:
+                            logger.warning(f"Unhandled tool call: {tool_call['name']}")
+                            messages.append(
+                                ToolMessage(
+                                    tool_call_id=tool_call["id"],
+                                    name=tool_call["name"],
+                                    content=f"Tool {tool_call['name']} not available or handled internally.",
+                                )
                             )
-                        )
 
                 if handoff_triggered:
                     break
