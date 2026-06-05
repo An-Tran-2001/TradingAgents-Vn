@@ -406,7 +406,7 @@ export const CliLogViewer: React.FC<CliLogViewerProps> = ({
                       )}
                       
                       {/* Text Highlighting Animation */}
-                      {(b.tool === "browser_extract_text" || b.tool === "browser_extract_html" || b.tool === "browser_extract_hyperlinks" || b.tool === "get_vietnam_macro") && (
+                      {(b.tool === "browser_extract_text" || b.tool === "browser_extract_html" || b.tool === "browser_extract_hyperlinks" || b.tool === "get_vietnam_macro" || b.tool === "browser_get_dom_snippet") && (
                         <div className="absolute top-[30%] left-[5%] right-[5%] h-[40%] bg-emerald-500/10 border border-emerald-500/50 rounded-lg flex items-center justify-center animate-in fade-in zoom-in-95 duration-500 z-20 pointer-events-none">
                            <div className="absolute top-0 left-0 h-full w-[4px] bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.8)]"></div>
                            <span className="text-[11px] text-emerald-400 font-mono bg-background/95 px-3 py-1.5 rounded border border-emerald-500/50 backdrop-blur flex items-center gap-2 shadow-lg">
@@ -416,7 +416,7 @@ export const CliLogViewer: React.FC<CliLogViewerProps> = ({
                       )}
 
                       {/* Click Target */}
-                      {(b.tool === "browser_click_element" || b.tool === "browser_get_elements") && (
+                      {(b.tool === "browser_click_element" || b.tool === "browser_get_elements" || b.tool === "browser_hover_element" || b.tool === "browser_fill_element" || b.tool === "browser_select_option" || b.tool === "browser_check_checkbox") && (
                         <div className="absolute top-[40%] left-[62%] z-20">
                           <div className="w-6 h-6 border-2 border-emerald-400 rounded-full animate-ping opacity-80 absolute -top-3 -left-3"></div>
                           <div className="w-2 h-2 bg-emerald-400 rounded-full absolute -top-1 -left-1"></div>
@@ -427,8 +427,9 @@ export const CliLogViewer: React.FC<CliLogViewerProps> = ({
                       <div 
                          className={`absolute z-50 flex flex-col items-center pointer-events-none transition-all duration-[1200ms] ease-out drop-shadow-2xl
                           ${b.tool === 'browser_navigate_browser' ? 'top-[-35px] left-[50%]' : 
-                            b.tool.includes('extract') || b.tool === "get_vietnam_macro" ? 'top-[220px] left-[40%]' : 
-                            b.tool.includes('click') || b.tool.includes('get_elements') ? 'top-[40%] left-[62%]' : 
+                            b.tool.includes('extract') || b.tool === "get_vietnam_macro" || b.tool === "browser_get_dom_snippet" ? 'top-[220px] left-[40%]' : 
+                            b.tool.includes('click') || b.tool.includes('get_elements') || b.tool.includes('hover_') || b.tool.includes('fill_') || b.tool.includes('select_') || b.tool.includes('check_') ? 'top-[40%] left-[62%]' : 
+                            b.tool === 'browser_scroll_browser' ? 'top-[50%] left-[95%] animate-bounce' :
                             'top-[50%] left-[50%]'}`}
                       >
                         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">

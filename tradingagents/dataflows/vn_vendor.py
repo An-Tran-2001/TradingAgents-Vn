@@ -65,7 +65,7 @@ def get_tcbs_stock_data(
 
 async def stream_vietnam_macro_data(
     indicator: Annotated[str, "Tên chỉ số vĩ mô (cpi, gdp, interest_rate, exchange_rate)"],
-    curr_date: Annotated[str, "Ngày hiện tại yyyy-mm-dd"] = None,
+    target_date: Annotated[str, "Ngày hoặc năm cần lấy dữ liệu"] = None,
     config: dict = None,
     browser_id: str = None
 ):
@@ -78,7 +78,13 @@ async def stream_vietnam_macro_data(
         
     indicator_lower = indicator.lower()
     
-    date_context = f" tính đến thời điểm {curr_date}" if curr_date else " mới nhất"
+    if target_date:
+        if len(target_date) == 4 and target_date.isdigit():
+            date_context = f" cho năm {target_date}"
+        else:
+            date_context = f" tính đến thời điểm {target_date}"
+    else:
+        date_context = " mới nhất"
     
     # Định tuyến URL theo loại chỉ số
     if "cpi" in indicator_lower:

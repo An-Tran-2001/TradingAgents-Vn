@@ -1,6 +1,6 @@
 import sys
 from langchain_core.tools import tool
-from typing import Annotated
+from typing import Annotated, Literal
 from tradingagents.dataflows.vn_vendor import (
     get_tcbs_stock_data,
     get_cafef_news,
@@ -21,20 +21,22 @@ import uuid
 @tool
 def get_vietnam_macro(
     indicator: Annotated[
-        str, "Tên chỉ số vĩ mô (cpi, gdp, interest_rate, exchange_rate)"
+        Literal["cpi", "gdp", "interest_rate", "exchange_rate", "fdi", "pmi"],
+        "Short code of macroeconomic indicator (cpi, gdp, interest_rate, exchange_rate, fdi, pmi).",
     ],
-    curr_date: Annotated[str, "Ngày hiện tại yyyy-mm-dd"] = None,
+    target_date: Annotated[
+        str, "Target date or year for the data (e.g., '2024', '2024-05-01')"
+    ] = None,
     config: RunnableConfig = None,
 ) -> str:
     """
-    Retrieve Vietnam macroeconomic data (CPI, GDP, Interest Rate, Exchange Rate, FDI, PMI, etc.).
-    Uses a Browser Agent to navigate official sources like SBV, GSO, Customs.
-    If the official source lacks data or is unresponsive, the Agent will automatically fallback to searching Google (e.g., CafeF, VnEconomy, GSO).
+    Retrieve Vietnam macroeconomic data via an autonomous Browser Agent.
+
     Args:
-        indicator (str): The macroeconomic indicator to fetch. Be specific if needed (e.g., 'CPI tháng 5 năm 2024').
-        curr_date (str): Current trading date in yyyy-mm-dd format.
+        indicator (str): Macroeconomic indicator short code (cpi, gdp, interest_rate, exchange_rate, fdi, pmi).
+        target_date (str): Target date/year for the data (e.g., '2024', '2024-05-01').
     Returns:
-        str: Formatted macro data report with exact numbers and source URL.
+        str: Formatted macro report with exact numbers and source URLs.
     """
 
     async def _run():
@@ -42,17 +44,22 @@ def get_vietnam_macro(
         browser_id = str(uuid.uuid4())[:8]
         queue = config.get("configurable", {}).get("stream_queue") if config else None
         main_loop = config.get("configurable", {}).get("loop") if config else None
-        
+
         if queue and main_loop:
-            main_loop.call_soon_threadsafe(queue.put_nowait, {
-                "type": "orchestrator_tool_start",
-                "tool": "get_vietnam_macro",
-                "args": {"indicator": indicator, "curr_date": curr_date},
-                "browser_id": browser_id
-            })
+            main_loop.call_soon_threadsafe(
+                queue.put_nowait,
+                {
+                    "type": "orchestrator_tool_start",
+                    "tool": "get_vietnam_macro",
+                    "args": {"indicator": indicator, "target_date": target_date},
+                    "browser_id": browser_id,
+                },
+            )
 
         try:
-            async for event in stream_vietnam_macro_data(indicator, curr_date, config, browser_id=browser_id):
+            async for event in stream_vietnam_macro_data(
+                indicator, target_date, config, browser_id=browser_id
+            ):
                 if event["type"] == "final_result":
                     final_res = event["content"]
                 elif queue and main_loop:
@@ -60,23 +67,29 @@ def get_vietnam_macro(
         except Exception as e:
             final_res = f"Lỗi trong quá trình lấy dữ liệu vĩ mô: {str(e)}"
             if queue and main_loop:
-                main_loop.call_soon_threadsafe(queue.put_nowait, {
-                    "type": "agent_log",
-                    "step": 0,
-                    "agent": "System",
-                    "log_type": "Tool",
-                    "content": final_res,
-                    "time": "now"
-                })
+                main_loop.call_soon_threadsafe(
+                    queue.put_nowait,
+                    {
+                        "type": "agent_log",
+                        "step": 0,
+                        "agent": "System",
+                        "log_type": "Tool",
+                        "content": final_res,
+                        "time": "now",
+                    },
+                )
         finally:
             if queue and main_loop:
-                main_loop.call_soon_threadsafe(queue.put_nowait, {
-                    "type": "orchestrator_tool_end",
-                    "tool": "get_vietnam_macro",
-                    "result": "Success",
-                    "browser_id": browser_id
-                })
-            
+                main_loop.call_soon_threadsafe(
+                    queue.put_nowait,
+                    {
+                        "type": "orchestrator_tool_end",
+                        "tool": "get_vietnam_macro",
+                        "result": "Success",
+                        "browser_id": browser_id,
+                    },
+                )
+
         return final_res
 
     # CRITICAL: Always create a NEW event loop for each invocation.
@@ -84,11 +97,11 @@ def get_vietnam_macro(
     # If two threads share the same event loop via asyncio.get_event_loop(),
     # concurrent run_until_complete() calls will crash silently, causing
     # only the first tool call to succeed.
-    if sys.platform == 'win32':
+    if sys.platform == "win32":
         new_loop = asyncio.ProactorEventLoop()
     else:
         new_loop = asyncio.new_event_loop()
-        
+
     asyncio.set_event_loop(new_loop)
     try:
         return new_loop.run_until_complete(_run())
@@ -98,7 +111,7 @@ def get_vietnam_macro(
 
 @tool
 def get_vn_market_news(
-    symbol: Annotated[str, "Mã chứng khoán (Ticker symbol)"],
+    symbol: Annotated[str, "Ticker symbol of the company."],
 ) -> str:
     """
     Retrieve domestic market news from top financial sources in Vietnam like CafeF, Vietstock.
@@ -112,7 +125,7 @@ def get_vn_market_news(
 
 @tool
 def get_vn_official_announcements(
-    symbol: Annotated[str, "Mã chứng khoán (Ticker symbol)"],
+    symbol: Annotated[str, "Ticker symbol of the company."],
 ) -> str:
     """
     Retrieve official exchange announcements from HOSE/HNX for a given ticker,
@@ -127,7 +140,7 @@ def get_vn_official_announcements(
 
 @tool
 def get_vn_major_shareholders(
-    symbol: Annotated[str, "Mã chứng khoán (Ticker symbol)"],
+    symbol: Annotated[str, "Ticker symbol of the company."],
 ) -> str:
     """
     Retrieve major shareholders data (Foreign Ownership, Dragon Capital, VinaCapital, etc.)
@@ -151,7 +164,7 @@ def get_vn_etf_flow() -> str:
 
 @tool
 def get_vn_sector_data(
-    symbol: Annotated[str, "Mã chứng khoán (Ticker symbol)"],
+    symbol: Annotated[str, "Ticker symbol of the company."],
 ) -> str:
     """
     Retrieve sector-level data and peer comparison metrics (Top companies in the same sector).
@@ -175,7 +188,7 @@ def get_vn_market_breadth() -> str:
 
 @tool
 def get_vn_social_sentiment(
-    symbol: Annotated[str, "Mã chứng khoán (Ticker symbol)"],
+    symbol: Annotated[str, "Ticker symbol of the company."],
 ) -> str:
     """
     Retrieve retail and social sentiment from local communities (FireAnt, Facebook, Forums).
@@ -189,7 +202,7 @@ def get_vn_social_sentiment(
 
 @tool
 def get_vn_realtime_trading_data_tool(
-    symbol: Annotated[str, "Mã chứng khoán (Ticker symbol)"],
+    symbol: Annotated[str, "Ticker symbol of the company."],
 ) -> str:
     """
     Retrieve real-time trading stats, foreign ownership limits, ceiling/floor prices from CafeF.

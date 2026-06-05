@@ -113,6 +113,38 @@ async def stream_browser_research(
             except Exception as e:
                 return f"Failed to get DOM snippet: {e}"
 
+        class ScrollToolInput(BaseModel):
+            direction: str = Field(..., description="Direction to scroll: 'down' or 'up'")
+            amount: int = Field(default=500, description="Amount in pixels to scroll")
+
+        async def scroll_browser(direction: str, amount: int) -> str:
+            """Scroll the current web page up or down to see more content or load lazy elements."""
+            page = await get_page()
+            try:
+                if direction == "down":
+                    await page.evaluate(f"window.scrollBy(0, {amount})")
+                else:
+                    await page.evaluate(f"window.scrollBy(0, -{amount})")
+                import asyncio
+                await asyncio.sleep(1) # Wait for lazy content
+                return f"Scrolled {direction} by {amount} pixels"
+            except Exception as e:
+                return f"Failed to scroll: {e}"
+
+        class HoverToolInput(BaseModel):
+            selector: str = Field(..., description="CSS selector for the element to hover over")
+
+        async def hover_element(selector: str) -> str:
+            """Hover the mouse over an element. Useful for opening dropdown menus or tooltips."""
+            page = await get_page()
+            try:
+                await page.hover(selector, timeout=3000)
+                import asyncio
+                await asyncio.sleep(0.5)
+                return f"Hovered over element '{selector}'"
+            except Exception as e:
+                return f"Failed to hover: {e}"
+
         fill_tool = StructuredTool.from_function(
             coroutine=fill_element,
             name="fill_element",
@@ -143,8 +175,20 @@ async def stream_browser_research(
             description="Get the inner HTML of an element to understand its structure. Use this on a form or complex widget to see how to interact with it.",
             args_schema=GetDOMSnippetInput,
         )
+        scroll_tool = StructuredTool.from_function(
+            coroutine=scroll_browser,
+            name="scroll_browser",
+            description="Scroll the page up or down to reveal hidden or lazy-loaded content.",
+            args_schema=ScrollToolInput,
+        )
+        hover_tool = StructuredTool.from_function(
+            coroutine=hover_element,
+            name="hover_element",
+            description="Hover over an element to reveal tooltips or hidden dropdown menus.",
+            args_schema=HoverToolInput,
+        )
 
-        tools.extend([fill_tool, select_tool, check_tool, get_options_tool, get_dom_tool])
+        tools.extend([fill_tool, select_tool, check_tool, get_options_tool, get_dom_tool, scroll_tool, hover_tool])
 
         configurable = config.get("configurable", {}) if config else {}
         global_config = get_config()
@@ -178,16 +222,17 @@ async def stream_browser_research(
 You have access to a real headless browser and various tools to interact with web pages.
 
 ### CORE STRATEGY & AUTONOMY:
-- **Be Proactive & Exploratory**: You are not bound by a strict sequence. When you navigate to a page, observe the content. If you see a search bar, use it. If you see navigation menus, explore them.
+- **Be Proactive & Exploratory**: You are not bound by a strict sequence. When you navigate to a page, observe the content. If you see a search bar, use it. If you see navigation menus, explore them. If you cannot see the content, try using 'scroll_browser' to scroll down.
 - **Start at the Source**: Begin by navigating to the user's requested URL.
 - **Intelligent Fallback**: If the starting URL does not yield the required data, is unresponsive, or you feel stuck, YOU HAVE FULL AUTHORITY to abandon it and use 'navigate_browser' to search on Google: `https://www.google.com/search?q=<your_query>`. Use Google to find alternative authoritative sources (e.g., CafeF, VnEconomy, GSO).
 
 ### HANDLING FORMS & COMPLEX UI:
 - **Understand Before Acting**: If you encounter a complex form or dropdown, do not guess. Use 'get_dom_snippet' or 'get_select_options' to inspect the available fields, IDs, and options before making a selection.
+- **Hidden Menus**: Use 'hover_element' if a navigation menu requires a hover to display its options.
 - **Interact Accurately**: Use 'fill_element', 'select_option', and 'check_checkbox' to set the filters, then use 'click_element' to submit.
 
 ### TOOL GUIDELINES:
-- **CSS Selectors**: The 'click_element' tool uses standard 'querySelectorAll'. NEVER use pseudo-selectors like ':contains()', ':has-text()', or xpath. Only use strict CSS selectors like 'a.btn', 'button#submit', 'select[name=\"year\"]'.
+- **CSS Selectors**: The 'click_element' tool uses standard 'querySelectorAll'. NEVER use pseudo-selectors like ':contains()', ':has-text()', or xpath. Only use strict CSS selectors like 'a.btn', 'button#submit', 'select[name="year"]'.
 - **Hyperlink Navigation**: If you need to click a specific link but lack a good CSS selector, use 'extract_hyperlinks' or 'get_elements' to find the exact URL, then use 'navigate_browser' directly to that URL instead of clicking.
 - **Extraction**: Do not dump the entire raw HTML. Use 'get_dom_snippet' for targeted areas (e.g., tables, specific divs) or 'extract_text' to pull the required info.
 
