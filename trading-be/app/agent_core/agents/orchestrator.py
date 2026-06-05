@@ -27,6 +27,14 @@ from tradingagents.agents.utils.vietnam_tools import (
     get_vietnam_macro,
     get_vn_official_announcements,
     get_vn_realtime_trading_data_tool,
+    render_stock_chart,
+    render_financial_chart,
+    render_flow_chart,
+    calculate_technical_indicators,
+    detect_candlestick_pattern,
+    screen_stocks,
+    get_quick_valuation,
+    check_macro_correlation,
 )
 from langsmith import traceable
 import langsmith
@@ -60,6 +68,7 @@ class OrchestratorAgent:
         self.provider = provider
         self.model = model
         self.api_key = api_key
+        self.kwargs = kwargs
         try:
             client_kwargs = {
                 "provider": provider,
@@ -102,6 +111,14 @@ class OrchestratorAgent:
                 get_vietnam_macro,
                 get_vn_official_announcements,
                 get_vn_realtime_trading_data_tool,
+                render_stock_chart,
+                render_financial_chart,
+                render_flow_chart,
+                calculate_technical_indicators,
+                detect_candlestick_pattern,
+                screen_stocks,
+                get_quick_valuation,
+                check_macro_correlation,
             ]
 
             if self.websearch:
@@ -144,11 +161,13 @@ class OrchestratorAgent:
                 "Your mission is to help users make better financial and investment decisions by coordinating specialized agents, analyzing available information, and delivering accurate, actionable, and objective insights.\n\n"
                 "EXECUTION RULES:\n"
                 "1. Objective First: Understand the user's true objective before acting. Create an internal plan and choose the best execution path.\n"
-                "2. Adaptive Tool Usage: Use tools only when they add value. If a tool fails (e.g., stock price for a crypto coin), DO NOT stop. Use alternative tools (like web search) or reasoning to find another way.\n"
-                "3. Relentless Execution: Never give up on a single failure. Retry, switch strategies, and continue until the objective is achieved or all reasonable paths are exhausted.\n"
-                "4. Partial Delivery: If full completion is impossible, deliver the best possible partial result.\n"
-                "5. Autonomous Inference: Infer non-critical missing parameters (e.g., assume today's date if omitted) to reduce unnecessary clarification.\n"
-                "6. Professionalism: Do not reveal internal reasoning, planning, or execution details. Verify the final response addresses the objective. Be concise, professional, and action-oriented.\n\n"
+                "2. Visualization First: When asked to show or draw a chart (stock, financial, flow), USE the 'render_*_chart' tools directly. DO NOT hand off to Research Agent for drawing. You MUST return the exact Markdown code block (e.g., ```widget...```) returned by these tools in your final text so the frontend can render the UI widget.\n"
+                "3. Quick Analysis: If the user asks for simple, immediate metrics like RSI, candlestick patterns, quick valuation, or stock screening, use the specific quick analysis tools (`calculate_technical_indicators`, `detect_candlestick_pattern`, `screen_stocks`, `get_quick_valuation`) instead of the slow `run_financial_research`.\n"
+                "4. Adaptive Tool Usage: Use tools only when they add value. If a tool fails (e.g., stock price for a crypto coin), DO NOT stop. Use alternative tools (like web search) or reasoning to find another way.\n"
+                "5. Relentless Execution: Never give up on a single failure. Retry, switch strategies, and continue until the objective is achieved or all reasonable paths are exhausted.\n"
+                "6. Partial Delivery: If full completion is impossible, deliver the best possible partial result.\n"
+                "7. Autonomous Inference: Infer non-critical missing parameters (e.g., assume today's date if omitted) to reduce unnecessary clarification.\n"
+                "8. Professionalism: Do not reveal internal reasoning, planning, or execution details. Verify the final response addresses the objective. Be concise, professional, and action-oriented.\n\n"
                 "TICKER FORMATTING RULES:\n"
                 "- When using tools for Vietnamese stocks (e.g., VCB, FPT, HPG), you MUST append `.VN` to the ticker (e.g., `VCB.VN`).\n"
                 "- For US or Global stocks (e.g., AAPL), do not append any suffix unless specified.\n\n"
@@ -301,82 +320,71 @@ class OrchestratorAgent:
 
                         if tool_func:
                             try:
-                                yield {
-                                    "type": "orchestrator_tool_start",
-                                    "tool": tool_call["name"],
-                                    "args": tool_call["args"],
-                                }
-                                if tool_call["name"] == "get_vietnam_macro":
-
+                                streaming_tools = ["get_vietnam_macro", "get_vn_market_news", "get_vn_social_sentiment", "get_vn_etf_flow"]
+                                
+                                if tool_call["name"] not in streaming_tools:
+                                    yield {
+                                        "type": "orchestrator_tool_start",
+                                        "tool": tool_call["name"],
+                                        "args": tool_call["args"],
+                                    }
+                                
+                                if tool_call["name"] in streaming_tools:
+                                    queue = asyncio.Queue()
+                                    main_loop = asyncio.get_running_loop()
                                     config_dict = {
+                                        "configurable": {
+                                            "provider": self.provider,
+                                            "model": self.model,
+                                            "api_key": self.api_key,
+                                            "stream_queue": queue,
+                                            "loop": main_loop,
+                                        }
+                                    }
+                                    
+                                    if "azure_endpoint" in self.kwargs:
+                                        config_dict["configurable"]["azure_endpoint"] = self.kwargs["azure_endpoint"]
+                                    if "azure_deployment" in self.kwargs:
+                                        config_dict["configurable"]["azure_deployment"] = self.kwargs["azure_deployment"]
+                                        
+                                    async def run_tool_async():
+                                        try:
+                                            res = await tool_func.ainvoke(tool_call["args"], config=config_dict)
+                                            return res
+                                        except Exception as e:
+                                            logger.error(f"Error in ainvoke: {e}")
+                                            return str(e)
+                                        finally:
+                                            main_loop.call_soon_threadsafe(queue.put_nowait, None)
+                                            
+                                    task = asyncio.create_task(run_tool_async())
+                                    
+                                    while True:
+                                        event = await queue.get()
+                                        if event is None:
+                                            result = await task
+                                            break
+                                        
+                                        # Yield events coming from the tool
+                                        if event["type"] in ["orchestrator_tool_start", "orchestrator_tool_end", "agent_log", "text_chunk"]:
+                                            yield event
+                                else:
+                                    # Call using ainvoke. LangChain handles both sync and async tools automatically
+                                    invoke_config = {
                                         "configurable": {
                                             "provider": self.provider,
                                             "model": self.model,
                                             "api_key": self.api_key,
                                         }
                                     }
-                                    
-                                    if sys.platform == "win32":
-                                        queue = asyncio.Queue()
-                                        main_loop = asyncio.get_running_loop()
+                                    if "azure_endpoint" in self.kwargs:
+                                        invoke_config["configurable"]["azure_endpoint"] = self.kwargs["azure_endpoint"]
+                                    if "azure_deployment" in self.kwargs:
+                                        invoke_config["configurable"]["azure_deployment"] = self.kwargs["azure_deployment"]
                                         
-                                        def run_in_thread(loop, q, indicator, curr_date, config):
-                                            new_loop = asyncio.ProactorEventLoop()
-                                            asyncio.set_event_loop(new_loop)
-                                            async def wrapper():
-                                                try:
-                                                    async for evt in stream_vietnam_macro_data(indicator, curr_date, config):
-                                                        loop.call_soon_threadsafe(q.put_nowait, evt)
-                                                except Exception as e:
-                                                    logger.error(f"Error in macro background thread: {e}")
-                                                finally:
-                                                    loop.call_soon_threadsafe(q.put_nowait, None)
-                                            try:
-                                                new_loop.run_until_complete(wrapper())
-                                            finally:
-                                                new_loop.close()
-                                                
-                                        thread = threading.Thread(
-                                            target=run_in_thread,
-                                            args=(
-                                                main_loop,
-                                                queue,
-                                                tool_call["args"]["indicator"],
-                                                tool_call["args"].get("curr_date"),
-                                                config_dict
-                                            )
-                                        )
-                                        thread.start()
-                                        
-                                        while True:
-                                            event = await queue.get()
-                                            if event is None:
-                                                break
-                                            if event["type"] == "orchestrator_tool_start":
-                                                yield event
-                                            elif event["type"] == "final_result":
-                                                result = event["content"]
-                                    else:
-                                        async for event in stream_vietnam_macro_data(
-                                            tool_call["args"]["indicator"],
-                                            tool_call["args"].get("curr_date"),
-                                            config=config_dict,
-                                        ):
-                                            if event["type"] == "orchestrator_tool_start":
-                                                yield event
-                                            elif event["type"] == "final_result":
-                                                result = event["content"]
-                                else:
-                                    # Call using ainvoke. LangChain handles both sync and async tools automatically
                                     result = await tool_func.ainvoke(
                                         tool_call["args"],
-                                        config={
-                                            "configurable": {
-                                                "provider": self.provider,
-                                                "model": self.model,
-                                                "api_key": self.api_key,
-                                            }
-                                        },
+                                        config=invoke_config,
                                     )
 
                                 messages.append(

@@ -42,6 +42,7 @@ from tradingagents.agents.utils.structured import (
 from tradingagents.dataflows.reddit import fetch_reddit_posts
 from tradingagents.dataflows.stocktwits import fetch_stocktwits_messages
 from tradingagents.agents.utils.vietnam_tools import get_vn_social_sentiment
+from langchain_core.runnables import RunnableConfig
 
 
 def _seven_days_back(trade_date: str) -> str:
@@ -58,7 +59,7 @@ def create_sentiment_analyst(llm):
     """
     structured_llm = bind_structured(llm, SentimentReport, "Sentiment Analyst")
 
-    def sentiment_analyst_node(state):
+    def sentiment_analyst_node(state, config: RunnableConfig):
         ticker = state["company_of_interest"]
         end_date = state["trade_date"]
         start_date = _seven_days_back(end_date)
@@ -71,8 +72,8 @@ def create_sentiment_analyst(llm):
         stocktwits_block = fetch_stocktwits_messages(ticker, limit=30)
         reddit_block = fetch_reddit_posts(ticker)
         
-        # Thêm context đặc thù cho thị trường Việt Nam
-        vn_social_block = get_vn_social_sentiment.func(ticker)
+        # Thêm context đặc thù cho thị trường Việt Nam (Truyền config để UI nhận log stream)
+        vn_social_block = get_vn_social_sentiment.func(ticker, config=config)
 
         system_message = _build_system_message(
             ticker=ticker,

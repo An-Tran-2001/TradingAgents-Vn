@@ -8,7 +8,7 @@ from .validators import validate_model
 
 _PASSTHROUGH_KWARGS = (
     "timeout", "max_retries", "api_key", "reasoning_effort", "temperature",
-    "callbacks", "http_client", "http_async_client",
+    "callbacks", "http_client", "http_async_client", "azure_endpoint", "azure_deployment"
 )
 
 
@@ -38,8 +38,12 @@ class AzureOpenAIClient(BaseLLMClient):
 
         llm_kwargs = {
             "model": self.model,
-            "azure_deployment": os.environ.get("AZURE_OPENAI_DEPLOYMENT_NAME", self.model),
+            "api_version": os.environ.get("AZURE_OPENAI_API_VERSION", "2024-02-01"),
         }
+        
+        # Default fallback
+        if "azure_deployment" not in self.kwargs:
+            llm_kwargs["azure_deployment"] = os.environ.get("AZURE_OPENAI_DEPLOYMENT_NAME", self.model)
 
         for key in _PASSTHROUGH_KWARGS:
             if key in self.kwargs:

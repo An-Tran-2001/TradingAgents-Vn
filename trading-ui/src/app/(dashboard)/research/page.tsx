@@ -298,6 +298,7 @@ export default function AgentsResearchPage() {
               const data = JSON.parse(line.slice(6));
               
               if (data.type === "text_chunk") {
+
                 setIsTyping(false); // Remove typing indicator since we are streaming text now
                 
                 if (!activeMessageId) {
@@ -348,11 +349,13 @@ export default function AgentsResearchPage() {
                 setActiveTool(data.tool);
                 setActiveToolArgs(data.args);
                 
-                if (data.tool.startsWith("browser_") && data.args?.url) {
+                const isBrowserTool = data.tool.startsWith("browser_") || ["get_vietnam_macro", "get_vn_market_news", "get_vn_social_sentiment", "get_vn_etf_flow"].includes(data.tool);
+                
+                if (isBrowserTool && data.args?.url) {
                    setCurrentBrowserUrl(data.args.url);
                 }
                 
-                if (data.tool.startsWith("browser_") || data.tool === "get_vietnam_macro") {
+                if (isBrowserTool) {
                    setActiveBrowsers(prev => ({
                      ...prev,
                      [browserId]: {
@@ -367,7 +370,7 @@ export default function AgentsResearchPage() {
                 let contentText = `**Orchestrator Action**: Calling tool \`${data.tool}\` with args: \`${JSON.stringify(data.args)}\``;
                 let agentLabel = "System";
                 
-                if (data.tool.startsWith("browser_")) {
+                if (isBrowserTool) {
                     agentLabel = "Browser Agent";
                     const actionName = data.tool.replace("browser_", "").replace(/_/g, " ");
                     const url = data.args?.url || data.args?.query || "";
@@ -386,7 +389,10 @@ export default function AgentsResearchPage() {
                 const browserId = data.browser_id || "default";
                 setActiveTool(null);
                 setActiveToolArgs(null);
-                if (data.tool.startsWith("browser_") || data.tool === "get_vietnam_macro") {
+                
+                const isBrowserTool = data.tool.startsWith("browser_") || ["get_vietnam_macro", "get_vn_market_news", "get_vn_social_sentiment", "get_vn_etf_flow"].includes(data.tool);
+                
+                if (isBrowserTool) {
                    setActiveBrowsers(prev => {
                      const next = { ...prev };
                      delete next[browserId];

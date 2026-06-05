@@ -1,3 +1,4 @@
+import os
 import datetime
 import json
 import logging
@@ -8,7 +9,10 @@ from app.routers.v1.agent_chats.repositories.chat import (
     ChatSessionRepository,
     ChatMessageRepository,
 )
-from app.routers.v1.agent_reports.models.relational import ReportAgentOutput, ReportForecast
+from app.routers.v1.agent_reports.models.relational import (
+    ReportAgentOutput,
+    ReportForecast,
+)
 from app.routers.v1.agent_reports.repositories.report import ReportRepository
 from app.routers.v1.users.repositories.setting import SettingRepository
 from app.agent_core.agents.orchestrator import OrchestratorAgent
@@ -104,7 +108,7 @@ class ChatService:
         # Prioritize DB history to ensure we get the full JSON state and report_ids
         db_history = await self.get_session_messages(session_id)
         chat_history = []
-        
+
         # db_history includes the newly added user message, so we check if there are past messages (> 1)
         if db_history and len(db_history) > 1:
             for msg in db_history:
@@ -116,9 +120,11 @@ class ChatService:
                         if report_id:
                             content = f"[System: Generated financial research report. Report ID: {report_id}. Use the 'query_past_report' tool with this ID if the user asks questions about this report.]"
                     except Exception as e:
-                        logger.error(f"Failed to parse final_report for chat_history: {e}")
+                        logger.error(
+                            f"Failed to parse final_report for chat_history: {e}"
+                        )
                 chat_history.append({"role": msg.role, "content": content})
-            
+
             # Exclude the just-added user message which is already at the end
             chat_history = chat_history[:-1]
         else:
@@ -140,7 +146,7 @@ class ChatService:
             for k, v in user_settings.api_keys.items():
                 if isinstance(v, str):
                     api_keys[k] = v.strip()
-                    
+
             # The UI saves the key either directly under the provider or as {provider}_API_KEY depending on the config logic
             api_key = api_keys.get(provider)
 
@@ -157,14 +163,37 @@ class ChatService:
         if request_data.get("max_retries") is not None:
             orchestrator_kwargs["max_retries"] = request_data["max_retries"]
 
+        if "azure_endpoint" in api_keys:
+            orchestrator_kwargs["azure_endpoint"] = api_keys["azure_endpoint"]
+        if "azure_deployment" in api_keys:
+            orchestrator_kwargs["azure_deployment"] = api_keys["azure_deployment"]
+
+        # Apply Langsmith observability configurations globally for the process
+        if "langchain_tracing_v2" in api_keys:
+            os.environ["LANGCHAIN_TRACING_V2"] = (
+                "true" if api_keys["langchain_tracing_v2"] else "false"
+            )
+        if api_keys.get("langchain_api_key"):
+            os.environ["LANGCHAIN_API_KEY"] = api_keys["langchain_api_key"]
+        if api_keys.get("langchain_project"):
+            os.environ["LANGCHAIN_PROJECT"] = api_keys["langchain_project"]
+
         try:
             orchestrator = OrchestratorAgent(
-                provider=provider, 
-                model=quick_model, 
-                language=language, 
+                provider=provider,
+                model=quick_model,
+                language=language,
                 api_key=api_key,
-                backend_url=user_settings.llm_backend_url if (user_settings and user_settings.llm_backend_url and provider in ("ollama", "lmstudio")) else None,
-                **orchestrator_kwargs
+                backend_url=(
+                    user_settings.llm_backend_url
+                    if (
+                        user_settings
+                        and user_settings.llm_backend_url
+                        and provider in ("ollama", "lmstudio")
+                    )
+                    else None
+                ),
+                **orchestrator_kwargs,
             )
         except Exception as e:
             yield f"data: {json.dumps({'type': 'error', 'content': f'Agent Initialization Failed: {e}'})}\n\n"
@@ -210,8 +239,17 @@ class ChatService:
                 if api_key:
                     config["api_key"] = api_key
                 config["analysis_date"] = analysis_date
-                if user_settings and user_settings.llm_backend_url and provider in ("ollama", "lmstudio"):
+                if (
+                    user_settings
+                    and user_settings.llm_backend_url
+                    and provider in ("ollama", "lmstudio")
+                ):
                     config["backend_url"] = user_settings.llm_backend_url
+
+                if "azure_endpoint" in api_keys:
+                    config["azure_endpoint"] = api_keys["azure_endpoint"]
+                if "azure_deployment" in api_keys:
+                    config["azure_deployment"] = api_keys["azure_deployment"]
 
                 # Create the Assistant Message and Report beforehand
                 assistant_msg = await self.chat_message_repo.create(
@@ -251,40 +289,55 @@ class ChatService:
                         "deep_think_model": request_data.get("deep_think_model"),
                     }
                     final_text = json.dumps(
-                        {"type": "final_report", "report_id": report.id, "state": final_state},
+                        {
+                            "type": "final_report",
+                            "report_id": report.id,
+                            "state": final_state,
+                        },
                         ensure_ascii=False,
                     )
                     try:
                         await self.chat_message_repo.update(
                             db_obj=assistant_msg, obj_in={"content": final_text}
                         )
-                        
+
                         update_data = {
                             "status": "completed",
                             "summary": final_state.get("investment_plan", ""),
                         }
-                        
+
                         structured_report = final_state.get("structured_report")
                         if structured_report:
                             sr_update: dict = {
-                                "recommendation": structured_report.get("recommendation"),
+                                "recommendation": structured_report.get(
+                                    "recommendation"
+                                ),
                                 "confidence": structured_report.get("confidence"),
-                                "summary": structured_report.get("summary", update_data["summary"]),
+                                "summary": structured_report.get(
+                                    "summary", update_data["summary"]
+                                ),
                                 "bull_points": structured_report.get("bull_points", []),
                                 "bear_points": structured_report.get("bear_points", []),
                             }
                             # Only include numeric fields when explicitly set (Optional in schema)
-                            for field in ("change", "agents_count", "current_price", "target_price", "stop_loss", "risk_reward"):
+                            for field in (
+                                "change",
+                                "agents_count",
+                                "current_price",
+                                "target_price",
+                                "stop_loss",
+                                "risk_reward",
+                            ):
                                 val = structured_report.get(field)
                                 if val is not None:
                                     sr_update[field] = val
                             update_data.update(sr_update)
-                            
+
                         await self.report_repo.update(
                             db_obj=report,
                             obj_in=update_data,
                         )
-                        
+
                         if structured_report:
                             # Insert agent outputs
                             for out in structured_report.get("agent_outputs", []):
@@ -294,23 +347,35 @@ class ChatService:
                                     agent_name=out.get("agent", ""),
                                     recommendation=out.get("recommendation", ""),
                                     confidence=out.get("confidence", 0),
-                                    summary=out.get("summary", "")
+                                    summary=out.get("summary", ""),
                                 )
                                 self.report_repo.db.add(new_out)
-                            
+
                             for f in structured_report.get("forecasts", []):
                                 new_f = ReportForecast(
                                     report_id=report.id,
                                     day_offset=f.get("day") or "",
-                                    price_low=f.get("low") if f.get("low") is not None else 0.0,
-                                    price_high=f.get("high") if f.get("high") is not None else 0.0,
-                                    price_target=f.get("price") if f.get("price") is not None else 0.0,
-                                    signal=f.get("signal") or ""
+                                    price_low=(
+                                        f.get("low")
+                                        if f.get("low") is not None
+                                        else 0.0
+                                    ),
+                                    price_high=(
+                                        f.get("high")
+                                        if f.get("high") is not None
+                                        else 0.0
+                                    ),
+                                    price_target=(
+                                        f.get("price")
+                                        if f.get("price") is not None
+                                        else 0.0
+                                    ),
+                                    signal=f.get("signal") or "",
                                 )
                                 self.report_repo.db.add(new_f)
-                                
+
                             await self.report_repo.db.commit()
-                            
+
                     except Exception as e:
                         logger.error(f"Failed to update Report and Message in DB: {e}")
 

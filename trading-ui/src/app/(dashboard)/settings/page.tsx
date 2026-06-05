@@ -191,6 +191,19 @@ export default function SettingsPage() {
                 <Label htmlFor="OPENROUTER_API_KEY">OpenRouter API Key</Label>
                 <SecureInput id="OPENROUTER_API_KEY" placeholder="sk-or-..." value={getApiKeyValue('openrouter')} onChange={(v) => handleApiKeyChange('openrouter', v)} />
               </div>
+              {/* Azure OpenAI */}
+              <div className="space-y-2">
+                <Label htmlFor="AZURE_OPENAI_API_KEY">Azure OpenAI Key</Label>
+                <SecureInput id="AZURE_OPENAI_API_KEY" placeholder="azure-key-..." value={getApiKeyValue('azure')} onChange={(v) => handleApiKeyChange('azure', v)} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="AZURE_OPENAI_ENDPOINT">Azure Endpoint</Label>
+                <Input id="AZURE_OPENAI_ENDPOINT" placeholder="https://<resource>.openai.azure.com/" value={getApiKeyValue('azure_endpoint')} onChange={(e) => handleApiKeyChange('azure_endpoint', e.target.value)} className="bg-background/50 focus:bg-background transition-colors" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="AZURE_OPENAI_DEPLOYMENT">Azure Deployment</Label>
+                <Input id="AZURE_OPENAI_DEPLOYMENT" placeholder="gpt-4o" value={getApiKeyValue('azure_deployment')} onChange={(e) => handleApiKeyChange('azure_deployment', e.target.value)} className="bg-background/50 focus:bg-background transition-colors" />
+              </div>
             </CardContent>
           </Card>
 
@@ -288,6 +301,7 @@ export default function SettingsPage() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="openai">OpenAI (Recommended)</SelectItem>
+                      <SelectItem value="azure">Azure OpenAI</SelectItem>
                       <SelectItem value="anthropic">Anthropic Claude</SelectItem>
                       <SelectItem value="google">Google Gemini</SelectItem>
                       <SelectItem value="deepseek">DeepSeek</SelectItem>
@@ -370,6 +384,54 @@ export default function SettingsPage() {
                 <Switch id="TRADINGAGENTS_CHECKPOINT_ENABLED" checked={formData.checkpoint_enabled} onCheckedChange={(checked) => setFormData(p => ({...p, checkpoint_enabled: checked}))} />
               </div>
 
+            </CardContent>
+          </Card>
+
+          <Card className="border-t-4 border-t-blue-500 shadow-sm mt-8">
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Settings2 className="h-5 w-5 text-blue-500" />
+                <CardTitle>Observability & Tracing</CardTitle>
+              </div>
+              <CardDescription>
+                Configure LangSmith integration for monitoring agent logic and debugging runs.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="grid gap-6 sm:grid-cols-2">
+              <div className="space-y-2 sm:col-span-2">
+                <div className="flex flex-row items-center justify-between rounded-xl border border-primary/20 bg-primary/5 p-4 max-w-2xl">
+                  <div className="space-y-1">
+                    <Label className="text-base font-semibold">Enable LangChain Tracing</Label>
+                    <p className="text-sm text-muted-foreground">
+                      (LANGCHAIN_TRACING_V2) Enable tracing for LLM calls.
+                    </p>
+                  </div>
+                  <Switch 
+                    id="LANGCHAIN_TRACING_V2" 
+                    checked={getApiKeyValue('langchain_tracing_v2') === 'true'} 
+                    onCheckedChange={(checked) => handleApiKeyChange('langchain_tracing_v2', checked ? 'true' : 'false')} 
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="LANGCHAIN_API_KEY">LangChain API Key</Label>
+                <SecureInput 
+                  id="LANGCHAIN_API_KEY" 
+                  placeholder="lsv2_..." 
+                  value={getApiKeyValue('langchain_api_key')} 
+                  onChange={(v) => handleApiKeyChange('langchain_api_key', v)} 
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="LANGCHAIN_PROJECT">LangChain Project</Label>
+                <Input 
+                  id="LANGCHAIN_PROJECT" 
+                  placeholder="trading_agents" 
+                  value={getApiKeyValue('langchain_project')} 
+                  onChange={(e) => handleApiKeyChange('langchain_project', e.target.value)} 
+                  className="bg-background/50 focus:bg-background transition-colors" 
+                />
+              </div>
             </CardContent>
             
             {/* Mobile save button */}

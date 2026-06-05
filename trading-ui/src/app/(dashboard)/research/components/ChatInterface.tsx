@@ -22,7 +22,9 @@ import {
 import { Button } from "@/components/ui/button"
 import { Message } from "./types"
 import { motion, AnimatePresence } from "framer-motion"
-
+import { StockChartWidget } from "./widgets/StockChartWidget"
+import { FinancialChartWidget } from "./widgets/FinancialChartWidget"
+import { FlowChartWidget } from "./widgets/FlowChartWidget"
 const useSmoothText = (text: string) => {
   const [displayedText, setDisplayedText] = useState(text);
   const textRef = useRef(text);
@@ -153,12 +155,40 @@ const MessageBubble = React.memo(({ msg }: { msg: Message }) => {
                   }
                   return <a href={href} className="text-primary hover:underline font-medium" {...props}>{children}</a>;
                 },
-                pre: ({node, ...props}) => (
-                  <div className="my-4 rounded-lg overflow-hidden border border-border/50 bg-background/50 shadow-sm">
-                    <pre className="p-4 overflow-x-auto text-sm" {...props} />
-                  </div>
-                ),
+                pre: ({node, ...props}) => {
+                  const childrenArray = React.Children.toArray(props.children);
+                  const firstChild = childrenArray[0] as React.ReactElement;
+                  if (
+                    firstChild && 
+                    firstChild.props && 
+                    firstChild.props.className === 'language-widget'
+                  ) {
+                    return <>{props.children}</>;
+                  }
+                  return (
+                    <div className="my-4 rounded-lg overflow-hidden border border-border/50 bg-background/50 shadow-sm">
+                      <pre className="p-4 overflow-x-auto text-sm" {...props} />
+                    </div>
+                  );
+                },
                 code: ({node, className, children, ...props}) => {
+                  const match = /language-(\w+)/.exec(className || '')
+                  if (match && match[1] === 'widget') {
+                    try {
+                      const data = JSON.parse(String(children).replace(/\n$/, ''));
+                      if (data.type === 'stock_chart') {
+                        return <StockChartWidget data={data} />;
+                      }
+                      if (data.type === 'financial_chart') {
+                        return <FinancialChartWidget data={data} />;
+                      }
+                      if (data.type === 'flow_chart') {
+                        return <FlowChartWidget data={data} />;
+                      }
+                    } catch(e) {
+                      console.error("Failed to parse widget data", e);
+                    }
+                  }
                   return (
                     <code className={`${className || ''} bg-muted/50 text-primary px-1.5 py-0.5 rounded text-[13px] font-mono`} {...props}>
                       {children}

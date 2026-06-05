@@ -47,7 +47,8 @@ from tradingagents.agents.utils.agent_utils import (
     get_vn_sector_data,
     get_vn_market_breadth,
     get_vn_social_sentiment,
-    get_vn_realtime_trading_data_tool
+    get_vn_realtime_trading_data_tool,
+    get_verified_market_snapshot
 )
 
 from .checkpointer import checkpoint_step, clear_checkpoint, get_checkpointer, thread_id
@@ -174,6 +175,14 @@ class TradingAgentsGraph:
         api_key = self.config.get("api_key")
         if api_key:
             kwargs["api_key"] = api_key
+            
+        azure_endpoint = self.config.get("azure_endpoint")
+        if azure_endpoint:
+            kwargs["azure_endpoint"] = azure_endpoint
+            
+        azure_deployment = self.config.get("azure_deployment")
+        if azure_deployment:
+            kwargs["azure_deployment"] = azure_deployment
 
         return kwargs
 
@@ -191,6 +200,7 @@ class TradingAgentsGraph:
                     get_vn_sector_data,
                     get_vn_etf_flow,
                     get_vn_realtime_trading_data_tool,
+                    get_verified_market_snapshot,
                 ]
             ),
             "social": ToolNode(

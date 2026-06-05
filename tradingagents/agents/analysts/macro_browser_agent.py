@@ -9,8 +9,22 @@ from pydantic import BaseModel, Field
 from langgraph.prebuilt import create_react_agent
 from tradingagents.dataflows.config import get_config
 import json
+import re
 
 logger = logging.getLogger(__name__)
+
+
+def _is_reasoning_model(model_name: str) -> bool:
+    """Detect OpenAI o-series reasoning models that reject SystemMessage and temperature!=1."""
+    if not model_name:
+        return False
+    lower = model_name.lower()
+    # Matches: o1, o1-mini, o1-preview, o3, o3-mini, o4-mini, o4, etc.
+    return bool(re.match(r'^o\d', lower)) or lower in (
+        "o1", "o1-mini", "o1-preview",
+        "o3", "o3-mini",
+        "o4", "o4-mini",
+    )
 
 
 async def stream_browser_research(
@@ -190,6 +204,25 @@ async def stream_browser_research(
 
         tools.extend([fill_tool, select_tool, check_tool, get_options_tool, get_dom_tool, scroll_tool, hover_tool])
 
+        # IMPORTANT: Catch all tool errors (like Playwright timeouts) so the agent doesn't crash
+        safe_tools = []
+        for t in tools:
+            def create_safe(original_tool):
+                async def safe_run(**kwargs):
+                    try:
+                        return await original_tool.ainvoke(kwargs)
+                    except Exception as e:
+                        return f"Lỗi (Error) khi chạy {original_tool.name}: {str(e)}. Hãy thử URL khác hoặc dùng Google search."
+                
+                return StructuredTool.from_function(
+                    coroutine=safe_run,
+                    name=original_tool.name,
+                    description=original_tool.description,
+                    args_schema=original_tool.args_schema,
+                )
+            safe_tools.append(create_safe(t))
+        tools = safe_tools
+
         configurable = config.get("configurable", {}) if config else {}
         global_config = get_config()
 
@@ -205,20 +238,36 @@ async def stream_browser_research(
             or os.environ.get("OPENAI_API_KEY", "")
         )
 
+        # Detect if this is an o-series reasoning model (they reject SystemMessage & temp!=1)
+        is_o_series = _is_reasoning_model(model)
+
         # We use the current driving brain
         try:
-            client = create_llm_client(
-                provider=provider, model=model, api_key=api_key, temperature=0.0
-            )
+            client_kwargs = {
+                "provider": provider,
+                "model": model,
+                "api_key": api_key,
+                # o-series models require temperature=1 (they manage it internally)
+                "temperature": 1.0 if is_o_series else 0.0,
+            }
+            azure_endpoint = configurable.get("azure_endpoint") or global_config.get("azure_endpoint")
+            if azure_endpoint:
+                client_kwargs["azure_endpoint"] = azure_endpoint
+
+            azure_deployment = configurable.get("azure_deployment") or global_config.get("azure_deployment")
+            if azure_deployment:
+                client_kwargs["azure_deployment"] = azure_deployment
+
+            client = create_llm_client(**client_kwargs)
             llm = client.get_llm()
         except Exception as e:
             logger.warning(
                 f"Failed to create LLM from config: {e}. Falling back to default."
             )
+            is_o_series = False
             llm = ChatOpenAI(model="gpt-4o", temperature=0.0, api_key=api_key)
 
-        system_prompt = SystemMessage(
-            content="""You are an autonomous Web Browser Agent. Your primary goal is to find, extract, and summarize macroeconomic data accurately.
+        SYSTEM_INSTRUCTIONS = """You are an autonomous Web Browser Agent. Your primary goal is to find, extract, and summarize macroeconomic data accurately.
 You have access to a real headless browser and various tools to interact with web pages.
 
 ### CORE STRATEGY & AUTONOMY:
@@ -236,19 +285,30 @@ You have access to a real headless browser and various tools to interact with we
 - **Hyperlink Navigation**: If you need to click a specific link but lack a good CSS selector, use 'extract_hyperlinks' or 'get_elements' to find the exact URL, then use 'navigate_browser' directly to that URL instead of clicking.
 - **Extraction**: Do not dump the entire raw HTML. Use 'get_dom_snippet' for targeted areas (e.g., tables, specific divs) or 'extract_text' to pull the required info.
 
-Once you find the data, synthesize it clearly, provide the exact numbers, and cite the source URL. Be resourceful and persistent.
-"""
-        )
+Once you find the data, synthesize it clearly, provide the exact numbers, and cite the source URL. Be resourceful and persistent."""
 
-        agent = create_react_agent(llm, tools)
-
-        # We construct the message with the system prompt first
-        messages = [
-            system_prompt,
-            HumanMessage(
-                content=f"Please go to {start_url} and find the following information: {query}\n\nIf you cannot find the information on {start_url}, remember your FALLBACK strategy and navigate to Google to search for it."
-            ),
-        ]
+        # o-series (reasoning) models reject SystemMessage — inject instructions into human turn instead.
+        # Standard models use proper system/human split.
+        if is_o_series:
+            logger.info(f"[BrowserAgent] Detected o-series model '{model}' — injecting system prompt into human message.")
+            agent = create_react_agent(llm, tools)
+            messages = [
+                HumanMessage(
+                    content=(
+                        f"{SYSTEM_INSTRUCTIONS}\n\n"
+                        f"---\n"
+                        f"TASK: Please go to {start_url} and find the following information: {query}\n\n"
+                        f"If you cannot find the information on {start_url}, remember your FALLBACK strategy and navigate to Google to search for it."
+                    )
+                ),
+            ]
+        else:
+            agent = create_react_agent(llm, tools, prompt=SystemMessage(content=SYSTEM_INSTRUCTIONS))
+            messages = [
+                HumanMessage(
+                    content=f"Please go to {start_url} and find the following information: {query}\n\nIf you cannot find the information on {start_url}, remember your FALLBACK strategy and navigate to Google to search for it."
+                ),
+            ]
 
         final_output = "No result found."
         try:
@@ -270,7 +330,20 @@ Once you find the data, synthesize it clearly, provide the exact numbers, and ci
                 else:
                     final_output = message.content
         except Exception as e:
-            logger.error(f"Error during browser execution: {e}")
-            final_output = f"Lỗi trong quá trình chạy Browser Agent: {e}"
+            error_str = str(e)
+            logger.exception("Error during browser execution:")
+            # Provide a user-friendly error message with hints
+            if "invalid_prompt" in error_str or "usage policy" in error_str:
+                final_output = (
+                    f"[Browser Agent] Lỗi: Model '{model}' từ chối prompt vì vi phạm chính sách sử dụng hoặc không hỗ trợ định dạng SystemMessage. "
+                    f"Hãy thử dùng model khác như 'gpt-4o' hoặc 'gpt-4.1'. Chi tiết: {error_str}"
+                )
+            elif "Event loop is closed" in error_str:
+                final_output = (
+                    f"[Browser Agent] Lỗi async event loop: Vòng lặp đã bị đóng trước khi hoàn thành. "
+                    f"Kết quả thu được trước khi lỗi: {final_output}"
+                )
+            else:
+                final_output = f"Lỗi trong quá trình chạy Browser Agent: {error_str}"
 
         yield {"type": "final_result", "content": final_output}

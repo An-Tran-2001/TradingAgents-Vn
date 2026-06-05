@@ -237,6 +237,17 @@ _MODEL_CATALOG: Dict[str, Dict[str, List[tuple]]] = {
             ("Qwen 2.5 7B Instruct", "qwen2.5-7b-instruct"),
         ],
     },
+    "azure": {
+        "quick": [
+            ("GPT-4o Mini", "gpt-4o-mini"),
+            ("GPT-3.5 Turbo", "gpt-35-turbo"),
+        ],
+        "deep": [
+            ("GPT-4o", "gpt-4o"),
+            ("o1-mini", "o1-mini"),
+            ("o1-preview", "o1-preview"),
+        ],
+    },
 }
 # Regional aliases share the same models
 _MODEL_CATALOG["qwen-cn"] = _MODEL_CATALOG["qwen"]
@@ -464,6 +475,15 @@ class ConfigService:
             except Exception:
                 # Lỗi mạng -> fallback về static catalog bên dưới
                 pass
+
+        elif provider_lower == "azure":
+            # Azure models must match the deployed name exactly.
+            # If the user has configured an azure_deployment in their DB api_keys, return that.
+            azure_deployment = user_api_keys.get("azure_deployment")
+            if azure_deployment:
+                # Return this deployment for both quick and deep modes
+                models.append(ModelInfo(id=azure_deployment, name=f"Azure: {azure_deployment}", mode="quick"))
+                models.append(ModelInfo(id=azure_deployment, name=f"Azure: {azure_deployment}", mode="deep"))
 
         if not models:
             model_catalog = _MODEL_CATALOG.get(provider_lower, {})

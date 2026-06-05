@@ -6,7 +6,7 @@ import {
   TrendingUp, TrendingDown, Minus, RotateCcw, Activity,
   ChevronDown, ChevronUp, Target, AlertTriangle, CheckCircle2,
   XCircle, ShieldAlert, Gavel, BookOpen, LineChart, Newspaper,
-  MessageSquare, BrainCircuit, Zap, Cpu, ArrowRight, Quote
+  MessageSquare, MessageCircle, BrainCircuit, Zap, Cpu, ArrowRight, Quote
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -40,6 +40,50 @@ const Md = ({ children, compact }: { children: string; compact?: boolean }) => (
     <ReactMarkdown remarkPlugins={[remarkGfm]}>{children}</ReactMarkdown>
   </div>
 )
+
+const DebateChat = ({ history, title, icon: Icon, iconColor }: { history: string, title: string, icon: any, iconColor: string }) => {
+  if (!history) return null;
+  const regex = /(Bull Analyst|Bear Analyst|Aggressive Analyst|Conservative Analyst|Neutral Analyst):\s*([\s\S]*?)(?=(Bull Analyst|Bear Analyst|Aggressive Analyst|Conservative Analyst|Neutral Analyst):|$)/g;
+  let match;
+  const messages = [];
+  while ((match = regex.exec(history)) !== null) {
+    messages.push({
+      role: match[1].trim(),
+      content: match[2].trim()
+    });
+  }
+
+  if (messages.length === 0) return null;
+
+  return (
+    <Collapse label={title} icon={Icon} iconColor={iconColor} badge={`${messages.length} messages`}>
+      <div className="space-y-4 pt-2 pb-2">
+        {messages.map((msg, i) => {
+          const isRight = msg.role === "Bull Analyst" || msg.role === "Aggressive Analyst";
+          const isCenter = msg.role === "Neutral Analyst";
+          
+          let colors = "bg-muted/10 border-primary/10 text-foreground";
+          if (msg.role === "Bull Analyst") colors = "bg-emerald-400/10 border-emerald-400/20 text-emerald-400";
+          if (msg.role === "Bear Analyst") colors = "bg-red-400/10 border-red-400/20 text-red-400";
+          if (msg.role === "Aggressive Analyst") colors = "bg-orange-400/10 border-orange-400/20 text-orange-400";
+          if (msg.role === "Conservative Analyst") colors = "bg-blue-400/10 border-blue-400/20 text-blue-400";
+          if (msg.role === "Neutral Analyst") colors = "bg-slate-400/10 border-slate-400/20 text-slate-400";
+          
+          const textColor = colors.split(' ').pop();
+          
+          return (
+            <div key={i} className={`flex flex-col ${isRight ? "items-end" : isCenter ? "items-center" : "items-start"} w-full`}>
+               <div className={`text-[10px] font-semibold mb-1 px-1 ${textColor}`}>{msg.role}</div>
+               <div className={`p-3 rounded-2xl border text-xs max-w-[85%] ${colors} ${isRight ? 'rounded-tr-sm' : isCenter ? '' : 'rounded-tl-sm'}`}>
+                 <Md compact>{msg.content}</Md>
+               </div>
+            </div>
+          )
+        })}
+      </div>
+    </Collapse>
+  );
+};
 
 const Collapse = ({ label, icon: Icon, iconColor, children, defaultOpen = false, badge }: {
   label: string; icon: any; iconColor: string; children: React.ReactNode; defaultOpen?: boolean; badge?: string
@@ -256,6 +300,24 @@ export const FinalReport: React.FC<FinalReportProps> = ({ ticker, finalState, on
               })}
             </div>
           </Collapse>
+        )}
+
+        {finalState?.investment_debate_state?.history && (
+          <DebateChat 
+            history={finalState.investment_debate_state.history} 
+            title="Investment Debate" 
+            icon={MessageCircle} 
+            iconColor="text-purple-400" 
+          />
+        )}
+
+        {finalState?.risk_debate_state?.history && (
+          <DebateChat 
+            history={finalState.risk_debate_state.history} 
+            title="Risk Management Debate" 
+            icon={ShieldAlert} 
+            iconColor="text-orange-400" 
+          />
         )}
 
         {(researchVerdict || traderPlan || pmDecision) && (

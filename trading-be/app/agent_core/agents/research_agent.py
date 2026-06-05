@@ -2,8 +2,21 @@ import asyncio
 import json
 import logging
 import datetime
+import warnings
 from typing import Dict, Any, AsyncGenerator, Optional, List, Literal
 from concurrent.futures import ThreadPoolExecutor
+
+# Suppress the harmless Pydantic v2 serialization warnings triggered by
+# OpenAI Responses API storing a parsed Pydantic instance in AIMessage.parsed
+# (declared as `None` in LangChain's schema). The value is correct — only the
+# type annotation in LangChain's AIMessage is stale. Pydantic v2 always emits
+# these from pydantic/main.py, so we filter by module for reliability.
+warnings.filterwarnings(
+    "ignore",
+    message="Pydantic serializer warnings.*",
+    category=UserWarning,
+    module="pydantic",
+)
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -513,12 +526,18 @@ class ResearchAgentRunner:
                         },
                     )
 
-                    llm_client = create_llm_client(
-                        provider=self.config.get("llm_provider", "openai"),
-                        model=self.config.get("deep_think_llm", "gpt-4o"),
-                        api_key=self.config.get("api_key"),
-                        base_url=self.config.get("backend_url"),
-                    ).get_llm()
+                    client_kwargs = {
+                        "provider": self.config.get("llm_provider", "openai"),
+                        "model": self.config.get("deep_think_llm", "gpt-4o"),
+                        "api_key": self.config.get("api_key"),
+                        "base_url": self.config.get("backend_url"),
+                    }
+                    if "azure_endpoint" in self.config:
+                        client_kwargs["azure_endpoint"] = self.config["azure_endpoint"]
+                    if "azure_deployment" in self.config:
+                        client_kwargs["azure_deployment"] = self.config["azure_deployment"]
+
+                    llm_client = create_llm_client(**client_kwargs).get_llm()
 
                     trader_plan = final_state.get("trader_investment_plan", "")
                     # investment_debate_state.judge_decision = Research Manager's verdict
