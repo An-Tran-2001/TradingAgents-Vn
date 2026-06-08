@@ -71,7 +71,7 @@ export const ReportsList: React.FC<ReportsListProps> = ({
         </div>
       </div>
 
-      <ScrollArea className="flex-1 custom-scrollbar">
+      <ScrollArea className="flex-1 min-h-0 custom-scrollbar">
         <div className="p-4 space-y-3">
           <div className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
             {t("reports.listTitle")}

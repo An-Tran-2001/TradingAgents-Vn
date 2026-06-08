@@ -53,7 +53,7 @@ export const ReportCliDialog: React.FC<ReportCliDialogProps> = ({
           </DialogTitle>
         </DialogHeader>
         
-        <div className="flex-1 overflow-hidden p-4 relative">
+        <div className="flex-1 flex flex-col min-h-0 overflow-hidden p-4 relative">
           {isLoading ? (
             <div className="absolute inset-0 flex items-center justify-center">
               <Loader2 className="w-8 h-8 animate-spin text-primary" />

@@ -13,11 +13,11 @@ def get_user_guide() -> str:
     - "What are the capabilities of the agents?" -> get_user_guide()
     """
     try:
-        # Locate the README.md from the root directory
+        # Locate the user_guide.md from the data directory
         current_dir = os.path.dirname(os.path.abspath(__file__))
-        # app/agent_core/tools/ -> app/agent_core/ -> app/ -> trading-be/ -> root
-        root_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(current_dir))))
-        readme_path = os.path.join(root_dir, "README.md")
+        # app/agent_core/tools/ -> app/agent_core/
+        agent_core_dir = os.path.dirname(current_dir)
+        readme_path = os.path.join(agent_core_dir, "data", "user_guide.md")
         
         if os.path.exists(readme_path):
             with open(readme_path, "r", encoding="utf-8") as f:

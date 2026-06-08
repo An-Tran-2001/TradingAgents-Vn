@@ -455,8 +455,8 @@ const translations = {
     "jobs.viewLogs": "Xem Logs",
 
     // Deliveries Page
-    "sidebar.deliveries": "Lịch Sử Gửi Báo Cáo",
-    "deliveries.title": "Lịch Sử Gửi Báo Cáo",
+    "sidebar.deliveries": "Quản lý gửi Email",
+    "deliveries.title": "Quản lý gửi Email",
     "deliveries.subtitle": "Theo dõi các lượt gửi báo cáo tự động và thủ công qua Email và Telegram.",
     "deliveries.refresh": "Làm Mới",
     "deliveries.manualBroadcast": "Gửi Thủ Công",

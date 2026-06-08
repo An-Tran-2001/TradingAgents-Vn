@@ -1,7 +1,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, desc, func
-from typing import List
-from app.routers.v1.agent_reports.models.relational import Report
+from typing import List, Tuple
+from app.routers.v1.agent_reports.models.relational import Report, ReportDelivery
 from fastapi import Depends
 from app.dependencies.db import get_db
 from sqlalchemy.orm import selectinload
@@ -67,3 +67,41 @@ class ReportRepository:
         result = await self.db.execute(stmt)
         await self.db.commit()
         return result.rowcount
+
+    async def get_all_deliveries(self, skip: int = 0, limit: int = 100) -> List[Tuple[ReportDelivery, Report]]:
+        stmt = (
+            select(ReportDelivery, Report)
+            .join(Report, ReportDelivery.report_id == Report.id)
+            .order_by(desc(ReportDelivery.sent_at))
+            .offset(skip)
+            .limit(limit)
+        )
+        result = await self.db.execute(stmt)
+        return result.all() # returns a list of tuples (ReportDelivery, Report)
+
+    async def get_delivery_by_id(self, delivery_id: int) -> ReportDelivery | None:
+        stmt = select(ReportDelivery).where(ReportDelivery.id == delivery_id)
+        result = await self.db.execute(stmt)
+        return result.scalars().first()
+
+    async def resend_delivery(self, delivery_id: int) -> bool:
+        delivery = await self.get_delivery_by_id(delivery_id)
+        if delivery:
+            delivery.status = "PENDING"
+            delivery.error_message = None
+            await self.db.commit()
+            return True
+        return False
+
+    async def create_delivery(self, report_id: int, channel: str, recipient: str, trigger_source: str = "MANUAL_CLICK") -> ReportDelivery:
+        delivery = ReportDelivery(
+            report_id=report_id,
+            channel=channel,
+            recipient=recipient,
+            trigger_source=trigger_source,
+            status="PENDING"
+        )
+        self.db.add(delivery)
+        await self.db.commit()
+        await self.db.refresh(delivery)
+        return delivery

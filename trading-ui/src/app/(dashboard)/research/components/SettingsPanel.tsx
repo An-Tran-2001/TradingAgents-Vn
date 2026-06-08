@@ -213,7 +213,7 @@ export const SettingsPanel: React.FC = React.memo(() => {
         <h2 className="font-semibold text-sm">{t("research.settings")}</h2>
       </div>
       
-      <ScrollArea className="flex-1">
+      <ScrollArea className="flex-1 min-h-0 custom-scrollbar">
         <div className="p-5">
           <Tabs defaultValue="basic" className="w-full">
             <TabsList className="grid w-full grid-cols-2 mb-6">

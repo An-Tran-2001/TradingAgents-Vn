@@ -1,5 +1,5 @@
 from app.routers.v1.agent_reports.repositories.report_repository import ReportRepository
-from app.routers.v1.agent_reports.schemas.report import TickerSummarySchema, ReportDetailSchema, AgentLogSchema, ReportBaseSchema
+from app.routers.v1.agent_reports.schemas.report import TickerSummarySchema, ReportDetailSchema, AgentLogSchema, ReportBaseSchema, DeliveryWithReportSchema
 from app.routers.v1.agent_reports.models.non_relational import AgentLog
 from typing import List
 from fastapi import Depends
@@ -79,3 +79,42 @@ class ReportService:
 
     async def delete_ticker_reports(self, ticker: str) -> int:
         return await self.repo.archive_ticker(ticker)
+
+    async def get_deliveries(self, skip: int = 0, limit: int = 100) -> List[DeliveryWithReportSchema]:
+        db_deliveries = await self.repo.get_all_deliveries(skip, limit)
+        result = []
+        for delivery, report in db_deliveries:
+            result.append(DeliveryWithReportSchema(
+                id=delivery.id,
+                report_id=delivery.report_id,
+                channel=delivery.channel,
+                recipient=delivery.recipient,
+                trigger_source=delivery.trigger_source,
+                status=delivery.status,
+                error_message=delivery.error_message,
+                sent_at=delivery.sent_at,
+                ticker=report.ticker,
+                content=report.summary,
+                report_name=f"{report.ticker} Analysis Report"
+            ))
+        return result
+
+    async def resend_delivery(self, delivery_id: int) -> bool:
+        return await self.repo.resend_delivery(delivery_id)
+
+    async def create_delivery(self, report_id: int, channel: str, recipient: str) -> DeliveryWithReportSchema:
+        delivery = await self.repo.create_delivery(report_id, channel, recipient)
+        report = await self.repo.get_report_by_id(report_id)
+        return DeliveryWithReportSchema(
+            id=delivery.id,
+            report_id=delivery.report_id,
+            channel=delivery.channel,
+            recipient=delivery.recipient,
+            trigger_source=delivery.trigger_source,
+            status=delivery.status,
+            error_message=delivery.error_message,
+            sent_at=delivery.sent_at,
+            ticker=report.ticker if report else "UNKNOWN",
+            content=report.summary if report else None,
+            report_name=f"{report.ticker} Analysis Report" if report else None
+        )

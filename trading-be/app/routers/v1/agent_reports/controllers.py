@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from typing import List
 from app.routers.v1.agent_reports.services.report_service import ReportService
-from app.routers.v1.agent_reports.schemas.report import TickerSummarySchema, ReportDetailSchema, AgentLogSchema, ReportBaseSchema
+from app.routers.v1.agent_reports.schemas.report import TickerSummarySchema, ReportDetailSchema, AgentLogSchema, ReportBaseSchema, DeliveryWithReportSchema, ReportDeliveryCreateSchema
 from app.dependencies.auth import get_current_user
 from app.routers.v1.auth.models.relational import User
 
@@ -69,3 +69,36 @@ async def delete_ticker_reports(
     if count == 0:
         raise HTTPException(status_code=404, detail="No reports found for this ticker")
     return {"message": f"Successfully deleted {count} reports for {ticker}"}
+
+@router.get("/deliveries/all", response_model=List[DeliveryWithReportSchema], summary="Get all deliveries")
+async def get_deliveries(
+    skip: int = 0,
+    limit: int = 100,
+    current_user: User = Depends(get_current_user),
+    service: ReportService = Depends()
+):
+    return await service.get_deliveries(skip=skip, limit=limit)
+
+@router.post("/deliveries/{delivery_id}/resend", summary="Resend a delivery")
+async def resend_delivery(
+    delivery_id: int,
+    current_user: User = Depends(get_current_user),
+    service: ReportService = Depends()
+):
+    success = await service.resend_delivery(delivery_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Delivery not found")
+    return {"message": "Delivery queued for resend"}
+
+@router.post("/deliveries", response_model=DeliveryWithReportSchema, summary="Create a manual delivery")
+async def create_delivery(
+    data: ReportDeliveryCreateSchema,
+    current_user: User = Depends(get_current_user),
+    service: ReportService = Depends()
+):
+    # Verify report exists
+    report = await service.get_report_detail(data.report_id)
+    if not report:
+        raise HTTPException(status_code=404, detail="Report not found")
+    
+    return await service.create_delivery(data.report_id, data.channel, data.recipient)

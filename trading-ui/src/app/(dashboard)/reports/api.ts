@@ -62,7 +62,15 @@ export async function fetchReportDetails(reportId: number): Promise<DayReport> {
 }
 
 export async function fetchReportLogs(reportId: number | string): Promise<any[]> {
-  return await fetchClient(`/agent_reports/${reportId}/logs`)
+  const data = await fetchClient(`/agent_reports/${reportId}/logs`)
+  return data.map((log: any, index: number) => ({
+    step: index + 1,
+    time: new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+    agent: log.agent_name,
+    type: log.log_type,
+    content: log.content,
+    model: log.meta_data?.model || 'unknown'
+  }))
 }
 
 export async function deleteReport(reportId: number | string): Promise<void> {

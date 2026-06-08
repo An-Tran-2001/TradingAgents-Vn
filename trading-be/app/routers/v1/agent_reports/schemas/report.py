@@ -57,6 +57,28 @@ class ReportDetailSchema(ReportBaseSchema):
     agent_outputs: List[ReportAgentOutputSchema] = []
     forecasts: List[ReportForecastSchema] = []
 
+class ReportDeliveryCreateSchema(BaseModel):
+    report_id: int
+    channel: str
+    recipient: str
+
+class ReportDeliverySchema(BaseModel):
+    id: int
+    report_id: int
+    channel: str
+    recipient: str
+    trigger_source: str
+    status: str
+    error_message: Optional[str] = None
+    sent_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+class DeliveryWithReportSchema(ReportDeliverySchema):
+    ticker: str
+    content: Optional[str] = None
+    report_name: Optional[str] = None
+
 class TickerSummarySchema(BaseModel):
     ticker: str
     name: str = "" # Will map from DB or external source later if needed

@@ -27,41 +27,86 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
 import { toast } from "sonner"
 import { useLanguage } from "@/contexts/language-context"
-
-// Mock data for demonstration
-const MOCK_DELIVERIES = [
-  { id: "DEL-1042", reportId: "REP-992", ticker: "AAPL", channel: "EMAIL", recipient: "investor@example.com", source: "AUTO_JOB", status: "SUCCESS", time: "10 mins ago", error: null, content: "AAPL (Apple Inc.) - Daily Analysis Report\n\nRecommendation: BUY\nConfidence: 85%\nTarget Price: $195.00\n\nSummary:\nApple shows strong bullish momentum following the latest WWDC announcements. The supply chain has stabilized and consumer demand for the next iPhone cycle appears extremely robust. Technicals indicate a breakout above the 50-day moving average.\n\nRisk Assessment:\nLow risk. Keep an eye on global tariff negotiations." },
-  { id: "DEL-1041", reportId: "REP-991", ticker: "TSLA", channel: "TELEGRAM", recipient: "@trading_group", source: "BOT_COMMAND", status: "SUCCESS", time: "1 hour ago", error: null, content: "TSLA (Tesla Inc.) - Flash Update\n\nRecommendation: HOLD\nConfidence: 60%\n\nSummary:\nTesla deliveries met expectations but margins remain under pressure. The stock is currently trading in a tight range. Wait for clear breakout signals before committing capital." },
-  { id: "DEL-1040", reportId: "REP-990", ticker: "NVDA", channel: "EMAIL", recipient: "manager@fund.com", source: "MANUAL_CLICK", status: "FAILED", time: "2 hours ago", error: "SMTP Connection Timeout", content: "NVDA (NVIDIA Corp) - Urgent Buy Signal\n\nRecommendation: BUY\nConfidence: 95%\n\nSummary:\nUnprecedented demand for H200 chips. Data center revenue projected to beat estimates by 20%. Price target upgraded." },
-  { id: "DEL-1039", reportId: "REP-989", ticker: "BTC", channel: "TELEGRAM", recipient: "124958192", source: "AUTO_JOB", status: "PENDING", time: "Just now", error: null, content: "BTC (Bitcoin) - Hourly Scan\n\nRecommendation: SELL\nConfidence: 70%\n\nSummary:\nShort-term bearish divergence on the 4H chart. Expecting a pullback to the $62k support level before any continuation." },
-  { id: "DEL-1038", reportId: "REP-988", ticker: "MSFT", channel: "EMAIL", recipient: "board@example.com", source: "AUTO_JOB", status: "SUCCESS", time: "1 day ago", error: null, content: "MSFT (Microsoft) - Weekly Report\n\nRecommendation: BUY\nConfidence: 90%\n\nSummary:\nCloud computing sector growth remains unmatched. Copilot integration across enterprise software is driving strong recurring revenue." },
-]
+import { getDeliveries, resendDelivery, createDelivery, Delivery } from "@/lib/api/deliveries"
 
 export default function DeliveriesPage() {
   const [filter, setFilter] = useState("ALL")
   const [search, setSearch] = useState("")
   const [isRefreshing, setIsRefreshing] = useState(false)
-  const [selectedReport, setSelectedReport] = useState<any>(null)
+  const [selectedReport, setSelectedReport] = useState<Delivery | null>(null)
+  const [deliveries, setDeliveries] = useState<Delivery[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+
+  // Broadcast state
+  const [isBroadcastOpen, setIsBroadcastOpen] = useState(false)
+  const [broadcastReportId, setBroadcastReportId] = useState("")
+  const [broadcastChannel, setBroadcastChannel] = useState("EMAIL")
+  const [broadcastRecipient, setBroadcastRecipient] = useState("")
+  const [isBroadcasting, setIsBroadcasting] = useState(false)
   
   const { t } = useLanguage()
 
-  const handleRefresh = () => {
+  const fetchDeliveries = async () => {
+    try {
+      setIsLoading(true)
+      const data = await getDeliveries()
+      setDeliveries(data)
+    } catch (error) {
+      toast.error("Failed to load deliveries")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  React.useEffect(() => {
+    fetchDeliveries()
+  }, [])
+
+  const handleRefresh = async () => {
     setIsRefreshing(true)
-    setTimeout(() => {
-      setIsRefreshing(false)
-      toast("Sync Complete", { description: "Delivery history is up to date." })
-    }, 1000)
+    await fetchDeliveries()
+    setIsRefreshing(false)
+    toast("Sync Complete", { description: "Delivery history is up to date." })
   }
 
-  const handleResend = (id: string, e: React.MouseEvent) => {
+  const handleResend = async (id: number, e: React.MouseEvent) => {
     e.stopPropagation()
-    toast.success("Delivery Queued", { description: `Report for ${id} has been queued for resending.` })
+    try {
+      await resendDelivery(id)
+      toast.success("Delivery Queued", { description: `Report has been queued for resending.` })
+      fetchDeliveries()
+    } catch (error) {
+      toast.error("Failed to resend delivery")
+    }
   }
 
-  const filteredData = MOCK_DELIVERIES.filter(d => {
+  const handleBroadcast = async () => {
+    if (!broadcastReportId || !broadcastRecipient) {
+      toast.error("Please fill all fields")
+      return
+    }
+    
+    try {
+      setIsBroadcasting(true)
+      await createDelivery(parseInt(broadcastReportId), broadcastChannel, broadcastRecipient)
+      toast.success("Broadcast Queued", { description: "Your manual broadcast has been queued." })
+      setIsBroadcastOpen(false)
+      setBroadcastReportId("")
+      setBroadcastRecipient("")
+      fetchDeliveries()
+    } catch (error) {
+      toast.error("Failed to broadcast report")
+    } finally {
+      setIsBroadcasting(false)
+    }
+  }
+
+  const filteredData = deliveries.filter(d => {
     if (filter !== "ALL" && d.status !== filter) return false
     if (search && !d.ticker.toLowerCase().includes(search.toLowerCase()) && !d.recipient.toLowerCase().includes(search.toLowerCase())) return false
     return true
@@ -82,7 +127,7 @@ export default function DeliveriesPage() {
             <RefreshCw className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
             {t("deliveries.refresh" as any)}
           </Button>
-          <Button size="sm" className="gap-2">
+          <Button size="sm" className="gap-2" onClick={() => setIsBroadcastOpen(true)}>
             <Send className="h-4 w-4" />
             {t("deliveries.manualBroadcast" as any)}
           </Button>
@@ -141,13 +186,13 @@ export default function DeliveriesPage() {
               filteredData.map((row) => (
                 <TableRow key={row.id}>
                   <TableCell className="font-mono text-xs text-muted-foreground">
-                    {row.id}
+                    DEL-{row.id}
                   </TableCell>
                   <TableCell>
                     <div className="flex flex-col">
                       <span className="font-semibold text-foreground flex items-center gap-2">
                         {row.ticker}
-                        <Badge variant="outline" className="text-[10px] py-0">{row.reportId}</Badge>
+                        <Badge variant="outline" className="text-[10px] py-0">REP-{row.report_id}</Badge>
                       </span>
                       <span className="text-xs text-muted-foreground">{row.recipient}</span>
                     </div>
@@ -165,7 +210,7 @@ export default function DeliveriesPage() {
                   </TableCell>
                   <TableCell>
                     <span className="text-xs font-mono bg-muted/50 px-2 py-1 rounded-md">
-                      {row.source}
+                      {row.trigger_source}
                     </span>
                   </TableCell>
                   <TableCell>
@@ -180,14 +225,14 @@ export default function DeliveriesPage() {
                         {row.status}
                       </span>
                     </div>
-                    {row.error && (
-                      <div className="text-[10px] text-red-400 mt-1 line-clamp-1 max-w-[150px]" title={row.error}>
-                        {row.error}
+                    {row.error_message && (
+                      <div className="text-[10px] text-red-400 mt-1 line-clamp-1 max-w-[150px]" title={row.error_message}>
+                        {row.error_message}
                       </div>
                     )}
                   </TableCell>
                   <TableCell className="text-xs text-muted-foreground">
-                    {row.time}
+                    {new Date(row.sent_at).toLocaleString()}
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-2">
@@ -225,15 +270,76 @@ export default function DeliveriesPage() {
             <DialogTitle className="flex items-center gap-2 text-xl">
               <Mail className="h-5 w-5 text-primary" />
               {t("deliveries.dialog.title" as any)} {selectedReport?.ticker}
-              <Badge variant="outline" className="text-xs">{selectedReport?.reportId}</Badge>
+              <Badge variant="outline" className="text-xs">REP-{selectedReport?.report_id}</Badge>
             </DialogTitle>
             <DialogDescription>
-              {t("deliveries.dialog.deliveredTo" as any)} <strong className="text-foreground">{selectedReport?.recipient}</strong> {t("deliveries.dialog.via" as any)} {selectedReport?.channel} {t("deliveries.dialog.on" as any)} {selectedReport?.time}
+              {t("deliveries.dialog.deliveredTo" as any)} <strong className="text-foreground">{selectedReport?.recipient}</strong> {t("deliveries.dialog.via" as any)} {selectedReport?.channel} {t("deliveries.dialog.on" as any)} {selectedReport ? new Date(selectedReport.sent_at).toLocaleString() : ''}
             </DialogDescription>
           </DialogHeader>
           <div className="mt-4 bg-muted/20 p-5 rounded-xl border border-border/30 text-sm leading-relaxed whitespace-pre-wrap max-h-[60vh] overflow-y-auto font-mono text-foreground/90 custom-scrollbar shadow-inner">
             {selectedReport?.content}
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* MANUAL BROADCAST DIALOG */}
+      <Dialog open={isBroadcastOpen} onOpenChange={setIsBroadcastOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>{t("deliveries.manualBroadcast" as any) || "Manual Broadcast"}</DialogTitle>
+            <DialogDescription>
+              Enter the details to manually broadcast a report.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="report-id" className="text-right">
+                Report ID
+              </Label>
+              <Input
+                id="report-id"
+                type="number"
+                value={broadcastReportId}
+                onChange={(e) => setBroadcastReportId(e.target.value)}
+                className="col-span-3"
+                placeholder="e.g. 1"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="channel" className="text-right">
+                Channel
+              </Label>
+              <div className="col-span-3">
+                <Select value={broadcastChannel} onValueChange={setBroadcastChannel}>
+                  <SelectTrigger id="channel">
+                    <SelectValue placeholder="Select channel" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="EMAIL">Email</SelectItem>
+                    <SelectItem value="TELEGRAM">Telegram</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="recipient" className="text-right">
+                Recipient
+              </Label>
+              <Input
+                id="recipient"
+                value={broadcastRecipient}
+                onChange={(e) => setBroadcastRecipient(e.target.value)}
+                className="col-span-3"
+                placeholder="Email or Chat ID"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsBroadcastOpen(false)}>Cancel</Button>
+            <Button onClick={handleBroadcast} disabled={isBroadcasting}>
+              {isBroadcasting ? "Sending..." : "Broadcast"}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 

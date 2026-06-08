@@ -53,7 +53,7 @@ export const TickerList: React.FC<TickerListProps> = ({
         </div>
       </div>
       
-      <ScrollArea className="flex-1 custom-scrollbar">
+      <ScrollArea className="flex-1 min-h-0 custom-scrollbar">
         <div className="p-2 space-y-1">
           {filteredTickers.map(tickerItem => {
             const cfg = REC[tickerItem.latestRecommendation || "HOLD"]
