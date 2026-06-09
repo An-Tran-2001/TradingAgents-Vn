@@ -1,22 +1,26 @@
 <div align="center">
-  <h1>TradingAgents-Vn: Nền Tảng Phân Tích & Giao Dịch Đa Tác nhân (Multi-Agent)</h1>
+  <h2>TradingAgents-Vn: Nền Tảng Phân Tích & Giao Dịch Đa Tác nhân (Multi-Agent)</h2>
   <p><i>Được thiết kế chuyên biệt cho thị trường tài chính Việt Nam</i></p>
 </div>
 
-> **TradingAgents-Vn** là phiên bản mở rộng đột phá từ nền tảng TradingAgents nguyên bản. Ứng dụng sức mạnh của kiến trúc Đa Tác nhân AI (Multi-Agent System), hệ thống mô phỏng chính xác quy trình vận hành của một Quỹ Đầu Tư chuyên nghiệp (Hedge Fund) ngay trên trình duyệt của bạn. Bằng việc giải quyết triệt để bài toán ## Tại Sao Nên Chọn TradingAgents-Vn?
+> **TradingAgents-Vn** là phiên bản mở rộng đột phá từ nền tảng TradingAgents nguyên bản. Ứng dụng sức mạnh của kiến trúc Đa Tác nhân AI (Multi-Agent System), hệ thống mô phỏng chính xác quy trình vận hành của một Quỹ Đầu Tư chuyên nghiệp (Hedge Fund) ngay trên trình duyệt của bạn. Bằng việc giải quyết triệt để bài toán dữ liệu nội địa, nền tảng cung cấp một quy trình phân tích và ra quyết định liền mạch, tự động và khách quan.
 
-### Kiến Trúc Vững Chắc & Hiệu Suất Cao
+<br>
+
+### Tại Sao Nên Chọn TradingAgents-Vn?
+
+#### Kiến Trúc Vững Chắc & Hiệu Suất Cao
 - **Xử Lý Luồng Phức Tạp:** Sử dụng **LangGraph** điều phối mượt mà nhiều Tác nhân đồng thời.
 - **Real-time (Thời Gian Thực):** Kiến trúc `asyncio` đẩy trực tiếp suy luận của AI lên UI không độ trễ.
 - **Tối Ưu Tài Nguyên:** Phân loại thông minh giữa truy vấn nhanh (định giá, biểu đồ) và phân tích sâu.
 
-### Chống "Ảo Giác" AI & Chuẩn Mực Quỹ Đầu Tư
+#### Chống "Ảo Giác" AI & Chuẩn Mực Quỹ Đầu Tư
 - **Cơ Chế Tranh Biện (Debate):** Mô hình đối kháng `Bull` vs `Bear` triệt tiêu ảo giác LLM và thiên kiến xác nhận.
 - **Đầu Ra Chính Xác:** Chuẩn hóa dữ liệu bằng Pydantic đảm bảo logic và định dạng báo cáo.
 - **Chuẩn Quỹ Đầu Tư:** Phân tích độc lập $\rightarrow$ Tranh biện $\rightarrow$ Quản trị rủi ro $\rightarrow$ Duyệt $\rightarrow$ Thực thi.
 - **Giao Dịch Thực Chiến:** Đưa ra rõ Target Price, Stop Loss, Risk/Reward và dự phóng 5 ngày.
 
-### Khác Biệt Cốt Lõi: Công Cụ Nội Địa & Dữ Liệu "Sống"
+#### Khác Biệt Cốt Lõi: Công Cụ Nội Địa & Dữ Liệu "Sống"
 Khác với bản gốc dùng API chung, **TradingAgents-Vn** tích hợp Browser Agent (Playwright) giải quyết bài toán dữ liệu "đóng" tại Việt Nam:
 - **Dữ Liệu Độc Quyền:** Tự động trích xuất vĩ mô, quỹ ETF, sở hữu khối ngoại, và tâm lý từ CafeF, FireAnt, HOSE/HNX.
 - **Độ Tin Cậy Tuyệt Đối:** Không dùng mock data. AI ra quyết định dựa trên thông số thực tế theo thời gian thực.
@@ -24,31 +28,17 @@ Khác với bản gốc dùng API chung, **TradingAgents-Vn** tích hợp Browse
 
 ---
 
-## Kiến Trúc Đội Ngũ AI (AI Agent Architecture)
+### Kiến Trúc Đội Ngũ AI (AI Agent Architecture)
 
 Hệ thống phân rã quy trình phân tích thành các vai trò chuyên biệt để tối đa hóa tính đa chiều:
 
-- **1. Phân Tích (Analyst):** Gồm Cơ bản (tài chính), Kỹ thuật (biểu đồ), Tâm lý (mạng xã hội), và Tin tức (vĩ mô).
-- **2. Nghiên Cứu (Research):** Phe Tích cực (Bull) và Tiêu cực (Bear) phản biện sâu báo cáo từ nhóm Phân tích.
-- **3. Thực Thi (Execution):** Quản lý Nghiên cứu chốt báo cáo $\rightarrow$ Giám đốc Danh mục phê duyệt rủi ro $\rightarrow$ Trader lên kế hoạch cắt lỗ/chốt lời cụ thể.�m giảm thiểu sai lệch và tối đa hóa tính đa chiều.
-
-### 1. Đội Ngũ Phân Tích (Analyst Team)
-- **Phân Tích Cơ Bản (Fundamentals):** Đánh giá báo cáo tài chính, cơ cấu cổ đông và định giá cốt lõi.
-- **Phân Tích Kỹ Thuật (Technical):** Diễn giải biểu đồ, chỉ báo kỹ thuật và độ rộng thị trường.
-- **Phân Tích Tâm Lý (Sentiment):** Tổng hợp tâm lý đám đông từ các diễn đàn và mạng xã hội trong nước.
-- **Phân Tích Tin Tức (News):** Giám sát sự kiện kinh tế vĩ mô và thông báo từ tổ chức phát hành.
-
-### 2. Đội Ngũ Nghiên Cứu (Research Team)
-Bao gồm các nhà nghiên cứu mang quan điểm **Tích cực (Bullish)** và **Tiêu cực (Bearish)**. Họ thực hiện các phiên tranh luận có cấu trúc nhằm đào sâu và phản biện các báo cáo từ Đội ngũ Phân tích, phơi bày mọi rủi ro tiềm ẩn.
-
-### 3. Đội Ngũ Thực Thi (Execution Team)
-- **Quản Lý Nghiên Cứu (Research Manager):** Tổng hợp kết quả tranh luận thành đánh giá toàn diện.
-- **Giám Đốc Danh Mục (Portfolio Manager):** Đánh giá rủi ro hệ thống và ra quyết định phê duyệt cuối cùng (Mua/Nắm giữ/Bán).
-- **Nhà Giao Dịch (Trader):** Thiết lập kế hoạch thực thi chi tiết dựa trên chiến lược đã được duyệt.
+- **1. Phân Tích (Analyst):** Đánh giá Cơ bản (tài chính), Kỹ thuật (biểu đồ), Tâm lý (mạng xã hội), và Tin tức (vĩ mô).
+- **2. Nghiên Cứu (Research):** Phe Tích cực (Bull) và Tiêu cực (Bear) tranh biện để tìm ra rủi ro tiềm ẩn.
+- **3. Thực Thi (Execution):** Quản lý chốt báo cáo -> Giám đốc duyệt rủi ro -> Trader lên kế hoạch chi tiết.
 
 ---
 
-## Giao Diện Trực Quan & Tương Tác
+### Giao Diện Trực Quan & Tương Tác
 
 Nền tảng cung cấp một giao diện người dùng chuyên nghiệp, cho phép giám sát luồng công việc của các Tác nhân và tương tác dữ liệu theo thời gian thực.
 
@@ -73,15 +63,15 @@ Nền tảng cung cấp một giao diện người dùng chuyên nghiệp, cho p
 
 ---
 
-## Hướng Dẫn Cài Đặt & Khởi Chạy
+### Hướng Dẫn Cài Đặt & Khởi Chạy
 
-### Yêu cầu hệ thống
+#### Yêu cầu hệ thống
 - **Môi trường:** Linux/macOS hoặc WSL (Windows)
 - **Node.js:** `>= 20.9.0` (Khuyến nghị dùng `nvm`)
 - **Python:** `>= 3.10`
 - **Docker:** Docker & Docker Compose (cho môi trường Production)
 
-### 1. Triển khai bằng Docker (Production)
+#### 1. Triển khai bằng Docker (Production)
 Cách nhanh nhất và ổn định nhất để chạy ứng dụng.
 
 ```bash
@@ -92,11 +82,12 @@ docker compose up -d --build
 docker compose ps
 ```
 > **Lưu ý:** UI sẽ chạy tại `http://localhost:3000` và Backend API tại `http://localhost:8000`. 
-> Tài khoản Admin mặc định: `admin@tradingagents.com` / `admin123`.
+> Tài khoản Admin mặc định được thiết lập qua biến môi trường `DEFAULT_ADMIN_EMAIL` và `DEFAULT_ADMIN_PASSWORD` (Mặc định: `admin@tradingagents.com` / `admin123`).
+> Bạn có thể thay đổi bằng cách tạo file `.env` từ `.env.example` trước khi build.
 
-### 2. Triển khai Local (Development)
+#### 2. Triển khai Local (Development)
 
-#### Bước 2.1: Khởi chạy Backend
+##### Bước 2.1: Khởi chạy Backend
 ```bash
 # Di chuyển vào thư mục dự án
 cd TradingAgents-Vn
@@ -116,12 +107,16 @@ playwright install chromium --with-deps
 
 # Khởi chạy Backend
 cd trading-be
+
+# (Quan trọng) Copy file template và cấu hình env nếu cần đổi Admin mặc định
+cp .env.example .env
+
 alembic upgrade head           # Chạy database migrations
-python scripts/seed_admin.py   # Tạo tài khoản admin mặc định
+python scripts/seed_admin.py   # Tạo tài khoản admin mặc định dựa trên .env
 fastapi dev main.py --host 0.0.0.0 --port 8000
 ```
 
-#### Bước 2.2: Khởi chạy Frontend (UI)
+##### Bước 2.2: Khởi chạy Frontend (UI)
 Mở một terminal mới:
 ```bash
 # Di chuyển vào thư mục UI
