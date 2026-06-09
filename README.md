@@ -1,44 +1,36 @@
 <div align="center">
-  <h1>TradingAgents-Vn: Nền Tảng Phân Tích & Giao Dịch Đa Đặc Vụ (Multi-Agent)</h1>
+  <h1>TradingAgents-Vn: Nền Tảng Phân Tích & Giao Dịch Đa Tác nhân (Multi-Agent)</h1>
   <p><i>Được thiết kế chuyên biệt cho thị trường tài chính Việt Nam</i></p>
 </div>
 
-> **TradingAgents-Vn** là phiên bản mở rộng đột phá từ nền tảng TradingAgents nguyên bản. Ứng dụng sức mạnh của kiến trúc Đa Đặc Vụ AI (Multi-Agent System), hệ thống mô phỏng chính xác quy trình vận hành của một Quỹ Đầu Tư chuyên nghiệp (Hedge Fund) ngay trên trình duyệt của bạn. Bằng việc giải quyết triệt để bài toán dữ liệu nội địa, nền tảng cung cấp một quy trình phân tích và ra quyết định liền mạch, tự động và khách quan.
-
-<br>
-
-## Tại Sao Nên Chọn TradingAgents-Vn?
-
-Hệ thống được kiến trúc dựa trên các tiêu chuẩn khắt khe nhất về công nghệ và nghiệp vụ tài chính, mang lại sự tin cậy tuyệt đối:
+> **TradingAgents-Vn** là phiên bản mở rộng đột phá từ nền tảng TradingAgents nguyên bản. Ứng dụng sức mạnh của kiến trúc Đa Tác nhân AI (Multi-Agent System), hệ thống mô phỏng chính xác quy trình vận hành của một Quỹ Đầu Tư chuyên nghiệp (Hedge Fund) ngay trên trình duyệt của bạn. Bằng việc giải quyết triệt để bài toán ## Tại Sao Nên Chọn TradingAgents-Vn?
 
 ### Kiến Trúc Vững Chắc & Hiệu Suất Cao
-- **Xử Lý Luồng Cấp Doanh Nghiệp:** Ứng dụng **LangGraph** làm lõi điều phối, nền tảng dễ dàng giải quyết các workflow phân nhánh phức tạp (nhiều Agent phân tích đồng thời) và hội tụ quyết định một cách mượt mà.
-- **Trải Nghiệm Thời Gian Thực:** Kiến trúc hướng sự kiện với cơ chế bất đồng bộ (`asyncio`) cho phép đẩy trực tiếp quá trình suy luận của AI lên giao diện. Bạn có thể theo dõi sát sao "dòng suy nghĩ" của từng Đặc vụ mà không gặp hiện tượng độ trễ.
-- **Tối Ưu Tài Nguyên Thông Minh:** Hệ thống tự động phân loại tác vụ. Các truy vấn nhanh (định giá nhanh, biểu đồ) được xử lý ngay lập tức, trong khi các báo cáo chuyên sâu mới kích hoạt toàn bộ Đội ngũ Nghiên cứu.
+- **Xử Lý Luồng Phức Tạp:** Sử dụng **LangGraph** điều phối mượt mà nhiều Tác nhân đồng thời.
+- **Real-time (Thời Gian Thực):** Kiến trúc `asyncio` đẩy trực tiếp suy luận của AI lên UI không độ trễ.
+- **Tối Ưu Tài Nguyên:** Phân loại thông minh giữa truy vấn nhanh (định giá, biểu đồ) và phân tích sâu.
 
-### Tư Duy Đa Chiều & Chống "Ảo Giác" AI (Anti-Hallucination)
-- **Cơ Chế Tranh Biện (Debate Mechanism):** Đây là "vũ khí" cốt lõi. Bằng cách tạo ra mô hình đối kháng giữa `Bull Researcher` (Lạc quan) và `Bear Researcher` (Bi quan), hệ thống tự động triệt tiêu các "ảo giác" thường thấy ở AI và loại bỏ hoàn toàn thiên kiến xác nhận.
-- **Kiểm Soát Độ Chính Xác Tuyệt Đối:** Đầu ra được định hình bằng cấu trúc dữ liệu nghiêm ngặt (Pydantic & Structured Outputs), đảm bảo mọi con số và báo cáo tài chính luôn chuẩn xác về mặt logic trước khi trình bày.
+### Chống "Ảo Giác" AI & Chuẩn Mực Quỹ Đầu Tư
+- **Cơ Chế Tranh Biện (Debate):** Mô hình đối kháng `Bull` vs `Bear` triệt tiêu ảo giác LLM và thiên kiến xác nhận.
+- **Đầu Ra Chính Xác:** Chuẩn hóa dữ liệu bằng Pydantic đảm bảo logic và định dạng báo cáo.
+- **Chuẩn Quỹ Đầu Tư:** Phân tích độc lập $\rightarrow$ Tranh biện $\rightarrow$ Quản trị rủi ro $\rightarrow$ Duyệt $\rightarrow$ Thực thi.
+- **Giao Dịch Thực Chiến:** Đưa ra rõ Target Price, Stop Loss, Risk/Reward và dự phóng 5 ngày.
 
-### Khác Biệt Cốt Lõi: Bộ Công Cụ Nội Địa & Độ Tin Cậy Dữ Liệu
-Khác với bản TradingAgents nguyên bản (vốn sử dụng các API tiêu chuẩn như Alpha Vantage cho thị trường Mỹ/Toàn cầu), phiên bản **TradingAgents-Vn** được trang bị một hệ sinh thái **Công cụ Nội địa (Vietnam Tools)** chạy trên nền tảng Browser Agent (Playwright) hoàn toàn tự động, giải quyết triệt để bài toán "khát" dữ liệu API mở tại Việt Nam:
-
-- **Nâng Cấp Dữ Liệu Độc Quyền:** 
-  - **Vĩ mô & Dòng tiền:** Tự động trích xuất chỉ số CPI, GDP, tỷ giá (`get_vietnam_macro`) và theo dõi sát sao dòng tiền từ các quỹ lớn như Fubon, Diamond ETF (`get_vn_etf_flow`).
-  - **Dữ liệu Doanh nghiệp:** Bóc tách trực tiếp tỷ lệ sở hữu khối ngoại, động thái của các tay to (Dragon Capital, VinaCapital) và các thông báo minh bạch từ Sở Giao dịch HOSE/HNX (`get_vn_major_shareholders`, `get_vn_official_announcements`).
-  - **Tâm lý Bầy đàn (Retail Sentiment):** Quét tin tức và đo lường tâm lý nhà đầu tư từ các cộng đồng rôm rả nhất như FireAnt, CafeF, và diễn đàn chứng khoán (`get_vn_social_sentiment`, `get_vn_market_news`).
-- **Độ Tin Cậy Tuyệt Đối (Data Reliability):** Thay vì phụ thuộc vào dữ liệu giả lập (mock data) hay các API miễn phí chậm trễ, Agent tự động điều khiển trình duyệt truy cập, "đọc" và trích xuất trực tiếp báo cáo từ các nguồn tài chính uy tín nhất Việt Nam theo thời gian thực. Mọi quyết định của LLM đều được "neo" (grounded) trên dữ liệu "sống" 100%.
-- **Công Cụ Phân Tích Nhanh (Quick Insights):** Bổ sung loạt công cụ định lượng chuyên sâu cho thị trường Việt Nam như: lọc cổ phiếu theo bộ tiêu chí (`screen_stocks`), định giá nhanh P/E P/B so với ngành (`get_quick_valuation`), và nhận diện ngay lập tức mẫu hình nến kỹ thuật đảo chiều (`detect_candlestick_pattern`).
-
-### Chuẩn Mực Quỹ Đầu Tư (Institutional Workflow)
-- **Quy Trình Vận Hành Chuyên Nghiệp:** Nền tảng tuân thủ quy trình đầu tư khắt khe: *Phân tích độc lập $\rightarrow$ Tranh biện phản biện $\rightarrow$ Quản trị rủi ro $\rightarrow$ Giám đốc danh mục chốt quyền $\rightarrow$ Trader lên kế hoạch thực thi*.
-- **Hành Động Thực Chiến (Actionable Insights):** Cung cấp các thông số định lượng rõ ràng để giao dịch thực tế: Điểm vào lệnh, Giá mục tiêu, Điểm cắt lỗ, Tỷ lệ Rủi ro/Lợi nhuận, cùng dự phóng xu hướng chi tiết cho 5 ngày tiếp theo.
+### Khác Biệt Cốt Lõi: Công Cụ Nội Địa & Dữ Liệu "Sống"
+Khác với bản gốc dùng API chung, **TradingAgents-Vn** tích hợp Browser Agent (Playwright) giải quyết bài toán dữ liệu "đóng" tại Việt Nam:
+- **Dữ Liệu Độc Quyền:** Tự động trích xuất vĩ mô, quỹ ETF, sở hữu khối ngoại, và tâm lý từ CafeF, FireAnt, HOSE/HNX.
+- **Độ Tin Cậy Tuyệt Đối:** Không dùng mock data. AI ra quyết định dựa trên thông số thực tế theo thời gian thực.
+- **Công Cụ Nhanh:** Cung cấp bộ lọc cổ phiếu, định giá P/E, và nhận diện mẫu hình nến tức thời.
 
 ---
 
 ## Kiến Trúc Đội Ngũ AI (AI Agent Architecture)
 
-Hệ thống phân rã quy trình phân tích tài chính phức tạp thành các vai trò chuyên biệt nhằm giảm thiểu sai lệch và tối đa hóa tính đa chiều.
+Hệ thống phân rã quy trình phân tích thành các vai trò chuyên biệt để tối đa hóa tính đa chiều:
+
+- **1. Phân Tích (Analyst):** Gồm Cơ bản (tài chính), Kỹ thuật (biểu đồ), Tâm lý (mạng xã hội), và Tin tức (vĩ mô).
+- **2. Nghiên Cứu (Research):** Phe Tích cực (Bull) và Tiêu cực (Bear) phản biện sâu báo cáo từ nhóm Phân tích.
+- **3. Thực Thi (Execution):** Quản lý Nghiên cứu chốt báo cáo $\rightarrow$ Giám đốc Danh mục phê duyệt rủi ro $\rightarrow$ Trader lên kế hoạch cắt lỗ/chốt lời cụ thể.�m giảm thiểu sai lệch và tối đa hóa tính đa chiều.
 
 ### 1. Đội Ngũ Phân Tích (Analyst Team)
 - **Phân Tích Cơ Bản (Fundamentals):** Đánh giá báo cáo tài chính, cơ cấu cổ đông và định giá cốt lõi.
@@ -58,7 +50,7 @@ Bao gồm các nhà nghiên cứu mang quan điểm **Tích cực (Bullish)** v�
 
 ## Giao Diện Trực Quan & Tương Tác
 
-Nền tảng cung cấp một giao diện người dùng chuyên nghiệp, cho phép giám sát luồng công việc của các đặc vụ và tương tác dữ liệu theo thời gian thực.
+Nền tảng cung cấp một giao diện người dùng chuyên nghiệp, cho phép giám sát luồng công việc của các Tác nhân và tương tác dữ liệu theo thời gian thực.
 
 <p align="center">
   <img src="assets/vn/chat.png" style="width: 100%; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
