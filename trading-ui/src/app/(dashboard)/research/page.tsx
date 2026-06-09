@@ -546,9 +546,6 @@ export default function AgentsResearchPage() {
             {!isCliExpanded && (
               <PipelineVisualization 
                 logAnimationStep={logAnimationStep} 
-                activeTool={activeTool} 
-                activeToolArgs={activeToolArgs} 
-                activeBrowsers={activeBrowsers}
               />
             )}
 

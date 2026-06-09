@@ -31,7 +31,9 @@ export const useAuthStore = create<AuthState>((set) => ({
       const data = await authApi.login(credentials);
       Cookies.set("access_token", data.access_token, {
         expires: 7,
-        secure: process.env.NODE_ENV === "production",
+        // NOTE: Không dùng secure:true ở đây vì app chạy HTTP.
+        // Nếu deploy HTTPS thật sự, bật lại: secure: true, sameSite: "strict"
+        sameSite: "lax",
       });
 
       const user = await authApi.getMe();

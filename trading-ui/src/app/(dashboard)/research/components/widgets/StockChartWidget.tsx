@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { createChart, ColorType, CrosshairMode } from 'lightweight-charts';
+import { createChart, ColorType, CrosshairMode, CandlestickSeries, LineSeries } from 'lightweight-charts';
 import { LineChart } from 'lucide-react';
 
 interface StockChartWidgetProps {
@@ -74,7 +74,7 @@ export const StockChartWidget: React.FC<StockChartWidgetProps> = ({ data }) => {
       height: 350,
     });
 
-    const candlestickSeries = chart.addCandlestickSeries({
+    const candlestickSeries = chart.addSeries(CandlestickSeries, {
       upColor: '#10b981', // emerald-500
       downColor: '#ef4444', // red-500
       borderVisible: false,
@@ -90,9 +90,9 @@ export const StockChartWidget: React.FC<StockChartWidgetProps> = ({ data }) => {
 
     // If SMA is requested
     if (data.indicators?.includes('SMA20') || data.indicators?.includes('SMA')) {
-       const smaSeries = chart.addLineSeries({
+       const smaSeries = chart.addSeries(LineSeries, {
          color: '#3b82f6', // blue-500
-         lineWidth: 1.5,
+         lineWidth: 2 as const,
          crosshairMarkerVisible: false,
        });
        

@@ -276,7 +276,7 @@ export default function DashboardPage() {
                     />
                     <Tooltip 
                       contentStyle={{ backgroundColor: 'rgba(0,0,0,0.9)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px' }}
-                      formatter={(val: number) => [`$${val.toLocaleString()}`, '']}
+                      formatter={(val: any) => [`$${Number(val).toLocaleString()}`, '']}
                     />
                     <Area type="monotone" dataKey="benchmark" stroke="#6b7280" fillOpacity={1} fill="url(#colorBenchmark)" name="Benchmark" />
                     <Area type="monotone" dataKey="value" stroke="#10b981" strokeWidth={3} fillOpacity={1} fill="url(#colorValue)" name="AI Portfolio" />
@@ -413,7 +413,7 @@ export default function DashboardPage() {
                     <Tooltip 
                       cursor={{ fill: 'rgba(0,240,255,0.05)' }}
                       contentStyle={{ backgroundColor: 'rgba(0,0,0,0.9)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px' }}
-                      formatter={(val: number) => [val.toLocaleString(), 'Tokens']}
+                      formatter={(val: any) => [Number(val).toLocaleString(), 'Tokens']}
                     />
                     <Bar dataKey="tokens" fill="#8b5cf6" radius={[4, 4, 0, 0]} maxBarSize={40} />
                   </BarChart>

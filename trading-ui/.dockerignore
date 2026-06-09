@@ -1,0 +1,16 @@
+# Exclude local build artifacts & dev files from Docker build context
+node_modules
+.next
+.env*.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Exclude host lockfile if using pnpm in Docker
+package-lock.json
+yarn.lock
+
+# Editor & OS artifacts
+.DS_Store
+.vscode
+*.log

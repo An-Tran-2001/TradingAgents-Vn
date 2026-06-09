@@ -11,5 +11,11 @@ build
 dist
 results
 eval_results
-Dockerfile
-docker-compose.yml
+
+# Không exclude Dockerfile và docker-compose (không cần copy vào image)
+# Exclude trading-ui từ backend build context
+trading-ui
+trading_agents.db
+
+# uv lockfile - backend dùng pip, không dùng uv
+uv.lock

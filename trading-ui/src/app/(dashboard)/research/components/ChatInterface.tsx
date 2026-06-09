@@ -161,7 +161,8 @@ const MessageBubble = React.memo(({ msg }: { msg: Message }) => {
                   if (
                     firstChild && 
                     firstChild.props && 
-                    firstChild.props.className === 'language-widget'
+                    'className' in (firstChild.props as any) && 
+                    (firstChild.props as any).className === 'language-widget'
                   ) {
                     return <>{props.children}</>;
                   }

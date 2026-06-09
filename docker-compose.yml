@@ -1,35 +1,42 @@
 services:
-  tradingagents:
-    build: .
+  trading-be:
+    build:
+      context: .
+      dockerfile: trading-be/Dockerfile
+    container_name: trading_be_server
+    ports:
+      - "8000:8000"
     env_file:
-      - .env
-    volumes:
-      - tradingagents_data:/home/appuser/.tradingagents
-    tty: true
-    stdin_open: true
-
-  ollama:
-    image: ollama/ollama:latest
-    volumes:
-      - ollama_data:/root/.ollama
-    profiles:
-      - ollama
-
-  tradingagents-ollama:
-    build: .
-    env_file:
-      - .env
+      - ./trading-be/.env
     environment:
-      - LLM_PROVIDER=ollama
-    volumes:
-      - tradingagents_data:/home/appuser/.tradingagents
+      - DEFAULT_ADMIN_EMAIL=admin@tradingagents.com
+      - DEFAULT_ADMIN_PASSWORD=admin123
+      - MONGO_URI=mongodb://mongodb:27017
     depends_on:
-      - ollama
-    tty: true
-    stdin_open: true
-    profiles:
-      - ollama
+      - mongodb
+    restart: unless-stopped
+
+  trading-ui:
+    build:
+      context: ./trading-ui
+      dockerfile: Dockerfile
+    container_name: trading_ui_server
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+    depends_on:
+      - trading-be
+    restart: unless-stopped
+
+  mongodb:
+    image: mongo:latest
+    container_name: trading_mongodb
+    ports:
+      - "27018:27017"
+    volumes:
+      - mongodb_data:/data/db
+    restart: unless-stopped
 
 volumes:
-  tradingagents_data:
-  ollama_data:
+  mongodb_data:
