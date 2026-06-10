@@ -1,5 +1,5 @@
 <div align="center">
-  <h2>TradingAgents-Vn: Nền Tảng AI Phân Tích Chứng Khoán & Bot Giao Dịch Đa Tác nhân (Multi-Agent)</h2>
+  <h1>TradingAgents-Vn: Nền Tảng AI Phân Tích Chứng Khoán & Bot Giao Dịch Đa Tác nhân (Multi-Agent)</h1>
   <p><i>Phiên bản Nâng cấp Toàn diện & Công cụ Đầu tư Tối ưu cho Thị trường Tài chính Việt Nam</i></p>
 </div>
 
