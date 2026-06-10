@@ -104,14 +104,25 @@ Nền tảng cung cấp một giao diện người dùng chuyên nghiệp, cho p
 <p align="center"><i>Báo cáo đầu ra có cấu trúc chặt chẽ với khuyến nghị, mức độ tự tin và dự phóng 5 ngày.</i></p>
 ---
 
-### Tính Năng Đặc Biệt (Preview Logic)
+### Tính Năng Đặc Biệt: Đóng Vòng Lặp Học Hỏi với LightRAG & Reflection Agent (Preview Logic)
 
-Hệ thống đang trong quá trình phát triển tính năng mới tích hợp **LightRAG** và **Reflection Agent** nhằm tăng cường khả năng tra cứu thông tin và tự đánh giá (logic đã được thiết kế và đang trong giai đoạn preview, các chức năng cụ thể sẽ được thực hiện ở bản cập nhật tiếp theo).
+**Vấn đề hiện tại:** Hệ thống đang học hỏi bằng cách đọc trực tiếp các báo cáo và log lưu trong cơ sở dữ liệu. Cách làm này gặp hạn chế lớn do context của log quá dài và thiếu sự liên kết rõ ràng về mối quan hệ giữa các dữ kiện.
+
+**Giải pháp Nâng cấp:** Để giải quyết triệt để, hệ thống đang phát triển tích hợp **LightRAG** và **Reflection Agent** nhằm tạo ra một cơ chế tự học (self-learning) thực thụ:
+
+- **LightRAG (Bộ Não Tri Thức):** Thay vì đọc log thô, LightRAG đóng vai trò như bộ não chính, phân tích và biến đổi toàn bộ log thành các *node logic liên kết với nhau như mạng nơ-ron*. Nhờ đó, Agent có thể hiểu và tìm kiếm các mẫu tương đồng ứng với từng bài toán cụ thể. Quá trình này không chỉ giới hạn ở một mã cổ phiếu mà là một *cơ chế toàn cục* quét qua tất cả những gì hệ thống đã từng phân tích trong quá khứ.
+- **Vòng Lặp Phát Triển Liên Tục:** 
+  1. Khi phân tích, Agent truy vấn LightRAG để tìm các kết quả/logic gần nhất. 
+  2. Dựa trên kết quả đó, hệ thống tham chiếu lại log chi tiết từ MongoDB và so sánh với *dữ liệu thực tế của tương lai* (những dự đoán đã diễn ra). 
+  3. Từ sự đối chiếu này, AI rút ra các bài học kinh nghiệm sâu sắc.
+  4. Kinh nghiệm đúc kết được sẽ lưu ngược lại vào "bộ não" LightRAG cho các lần sử dụng tương tự tiếp theo. Điều này tạo thành một vòng lặp phát triển liên tục, giúp mô hình ngày càng nhạy bén.
+
+*(Logic này đã được thiết kế hoàn thiện và đang trong giai đoạn preview. Chức năng chi tiết sẽ được triển khai ở bản cập nhật tiếp theo).*
 
 <p align="center">
   <img src="assets/vn/lightRAG-relectionAgent.png" width="100%" style="display: inline-block; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin: 0 2%;">
 </p>
-<p align="center"><i>Sơ đồ logic: LightRAG & Reflection Agent.</i></p>
+<p align="center"><i>Sơ đồ logic: Vòng lặp học hỏi liên tục qua Knowledge Graph của LightRAG & Reflection Agent.</i></p>
 
 ---
 
