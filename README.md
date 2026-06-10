@@ -102,6 +102,16 @@ Nền tảng cung cấp một giao diện người dùng chuyên nghiệp, cho p
   <img src="assets/vn/reports.png" width="100%" style="display: inline-block; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin: 0 2%;">
 </p>
 <p align="center"><i>Báo cáo đầu ra có cấu trúc chặt chẽ với khuyến nghị, mức độ tự tin và dự phóng 5 ngày.</i></p>
+---
+
+### Tính Năng Đặc Biệt (Preview Logic)
+
+Hệ thống đang trong quá trình phát triển tính năng mới tích hợp **LightRAG** và **Reflection Agent** nhằm tăng cường khả năng tra cứu thông tin và tự đánh giá (logic đã được thiết kế và đang trong giai đoạn preview, các chức năng cụ thể sẽ được thực hiện ở bản cập nhật tiếp theo).
+
+<p align="center">
+  <img src="assets/vn/lightRAG-relectionAgent.png" width="100%" style="display: inline-block; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin: 0 2%;">
+</p>
+<p align="center"><i>Sơ đồ logic: LightRAG & Reflection Agent.</i></p>
 
 ---
 

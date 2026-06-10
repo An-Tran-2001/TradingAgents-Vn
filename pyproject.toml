@@ -32,6 +32,7 @@ dependencies = [
     "yfinance>=1.4.1",
     "playwright>=1.60.0",
     "lxml>=5.4.0",
+    "lightrag-hku[api]>=1.5.1",
 ]
 
 [project.scripts]
