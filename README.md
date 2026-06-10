@@ -1,40 +1,82 @@
 <div align="center">
-  <h2>TradingAgents-Vn: Nền Tảng Phân Tích & Giao Dịch Đa Tác nhân (Multi-Agent)</h2>
-  <p><i>Được thiết kế chuyên biệt cho thị trường tài chính Việt Nam</i></p>
+  <h2>TradingAgents-Vn: Nền Tảng AI Phân Tích Chứng Khoán & Bot Giao Dịch Đa Tác nhân (Multi-Agent)</h2>
+  <p><i>Phiên bản Nâng cấp Toàn diện & Công cụ Đầu tư Tối ưu cho Thị trường Tài chính Việt Nam</i></p>
 </div>
 
-> **TradingAgents-Vn** là phiên bản mở rộng đột phá từ nền tảng TradingAgents nguyên bản. Ứng dụng sức mạnh của kiến trúc Đa Tác nhân AI (Multi-Agent System), hệ thống mô phỏng chính xác quy trình vận hành của một Quỹ Đầu Tư chuyên nghiệp (Hedge Fund) ngay trên trình duyệt của bạn. Bằng việc giải quyết triệt để bài toán dữ liệu nội địa, nền tảng cung cấp một quy trình phân tích và ra quyết định liền mạch, tự động và khách quan.
+<div align="center" style="line-height: 1; margin-top: 10px; margin-bottom: 20px;">
+  <a href="https://github.com/TauricResearch/TradingAgents" target="_blank"><img alt="Forked from" src="https://img.shields.io/badge/Inherited_From-TradingAgents-14C290?logo=github&logoColor=white"/></a>
+  <a href="https://arxiv.org/abs/2412.20138" target="_blank"><img alt="arXiv Paper" src="https://img.shields.io/badge/Original_Paper-arXiv:2412.20138-B31B1B?logo=arxiv"/></a>
+  <a href="#" target="_blank"><img alt="Market" src="https://img.shields.io/badge/Market-Vietnam_VN-blue?logo=google-maps&logoColor=white"/></a>
+</div>
+
+> **TradingAgents-Vn** được kế thừa trực tiếp từ nền tảng [**TradingAgents**](https://github.com/TauricResearch/TradingAgents) (Tauric Research) nguyên bản và nâng cấp mở rộng đột phá. Ứng dụng sức mạnh của kiến trúc Đa Tác nhân AI (Multi-Agent System), hệ thống đóng vai trò như một **bot AI chứng khoán thông minh**, mô phỏng chính xác quy trình vận hành của một Quỹ Đầu Tư chuyên nghiệp (Hedge Fund) ngay trên trình duyệt của bạn. Bằng việc giải quyết triệt để bài toán thu thập **dữ liệu chứng khoán realtime** nội địa, nền tảng cung cấp **công cụ phân tích kỹ thuật** và ra quyết định đầu tư liền mạch, tự động và khách quan.
 
 <br>
 
-### Tại Sao Nên Chọn TradingAgents-Vn?
+### Tại Sao Nên Chọn Công Cụ Phân Tích TradingAgents-Vn?
 
-#### Kiến Trúc Vững Chắc & Hiệu Suất Cao
-- **Xử Lý Luồng Phức Tạp:** Sử dụng **LangGraph** điều phối mượt mà nhiều Tác nhân đồng thời.
+#### Kiến Trúc Vững Chắc & Hiệu Suất Đầu Tư Cao
+- **Xử Lý Luồng Phức Tạp:** Sử dụng **LangGraph** điều phối mượt mà nhiều **AI Trading Bot** đồng thời.
 - **Real-time (Thời Gian Thực):** Kiến trúc `asyncio` đẩy trực tiếp suy luận của AI lên UI không độ trễ.
-- **Tối Ưu Tài Nguyên:** Phân loại thông minh giữa truy vấn nhanh (định giá, biểu đồ) và phân tích sâu.
+- **Tối Ưu Tài Nguyên:** Phân loại thông minh giữa truy vấn nhanh (định giá cổ phiếu, biểu đồ chứng khoán) và phân tích chuyên sâu.
 
-#### Chống "Ảo Giác" AI & Chuẩn Mực Quỹ Đầu Tư
-- **Cơ Chế Tranh Biện (Debate):** Mô hình đối kháng `Bull` vs `Bear` triệt tiêu ảo giác LLM và thiên kiến xác nhận.
-- **Đầu Ra Chính Xác:** Chuẩn hóa dữ liệu bằng Pydantic đảm bảo logic và định dạng báo cáo.
-- **Chuẩn Quỹ Đầu Tư:** Phân tích độc lập $\rightarrow$ Tranh biện $\rightarrow$ Quản trị rủi ro $\rightarrow$ Duyệt $\rightarrow$ Thực thi.
-- **Giao Dịch Thực Chiến:** Đưa ra rõ Target Price, Stop Loss, Risk/Reward và dự phóng 5 ngày.
+#### Chống "Ảo Giác" AI & Chuẩn Mực Đầu Tư Chứng Khoán
+- **Cơ Chế Tranh Biện (Debate):** Mô hình đối kháng `Bull` vs `Bear` triệt tiêu ảo giác LLM và thiên kiến xác nhận trong đầu tư.
+- **Đầu Ra Chính Xác:** Chuẩn hóa dữ liệu bằng Pydantic đảm bảo logic và định dạng báo cáo phân tích.
+- **Chuẩn Quỹ Đầu Tư:** Phân tích độc lập $\rightarrow$ Tranh biện $\rightarrow$ Quản trị rủi ro chứng khoán $\rightarrow$ Duyệt $\rightarrow$ Thực thi lệnh.
+- **Giao Dịch Thực Chiến:** Đưa ra rõ khuyến nghị giao dịch, Target Price, Stop Loss, tối ưu Risk/Reward và dự phóng thị trường 5 ngày.
 
-#### Khác Biệt Cốt Lõi: Công Cụ Nội Địa & Dữ Liệu "Sống"
-Khác với bản gốc dùng API chung, **TradingAgents-Vn** tích hợp Browser Agent (Playwright) giải quyết bài toán dữ liệu "đóng" tại Việt Nam:
-- **Dữ Liệu Độc Quyền:** Tự động trích xuất vĩ mô, quỹ ETF, sở hữu khối ngoại, và tâm lý từ CafeF, FireAnt, HOSE/HNX.
-- **Độ Tin Cậy Tuyệt Đối:** Không dùng mock data. AI ra quyết định dựa trên thông số thực tế theo thời gian thực.
-- **Công Cụ Nhanh:** Cung cấp bộ lọc cổ phiếu, định giá P/E, và nhận diện mẫu hình nến tức thời.
+#### Khác Biệt Cốt Lõi: Thu Thập Dữ Liệu Chứng Khoán "Sống" Nội Địa
+Khác với bản gốc dùng API chung, phần mềm **TradingAgents-Vn** tích hợp Browser Agent (Playwright) giải quyết triệt để bài toán dữ liệu "đóng" tại thị trường Việt Nam:
+- **Dữ Liệu Độc Quyền:** Tự động trích xuất vĩ mô, dòng tiền quỹ ETF, sở hữu khối ngoại, và tâm lý thị trường từ CafeF, FireAnt, sàn HOSE/HNX.
+- **Độ Tin Cậy Tuyệt Đối:** Không dùng mock data. **Bot giao dịch AI** ra quyết định hoàn toàn dựa trên thông số giao dịch thực tế theo thời gian thực.
+- **Công Cụ Phân Tích Nhanh:** Cung cấp bộ lọc cổ phiếu thông minh, định giá P/E, và nhận diện mẫu hình nến kỹ thuật tức thời.
 
 ---
 
-### Kiến Trúc Đội Ngũ AI (AI Agent Architecture)
+### Kiến Trúc Đội Ngũ AI & Luồng Vận Hành (Architecture & Execution Flow)
 
-Hệ thống phân rã quy trình phân tích thành các vai trò chuyên biệt để tối đa hóa tính đa chiều:
+Hệ thống hoạt động theo một quy trình khép kín gồm 5 giai đoạn chính, giả lập hoàn toàn cấu trúc của một Quỹ Đầu Tư chuyên nghiệp kết hợp với cơ chế Học hỏi liên tục (Memory & Learning).
 
-- **1. Phân Tích (Analyst):** Đánh giá Cơ bản (tài chính), Kỹ thuật (biểu đồ), Tâm lý (mạng xã hội), và Tin tức (vĩ mô).
-- **2. Nghiên Cứu (Research):** Phe Tích cực (Bull) và Tiêu cực (Bear) tranh biện để tìm ra rủi ro tiềm ẩn.
-- **3. Thực Thi (Execution):** Quản lý chốt báo cáo -> Giám đốc duyệt rủi ro -> Trader lên kế hoạch chi tiết.
+<p align="center">
+  <img src="assets/vn/app-flow.png" width="100%" style="display: inline-block; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin: 0 2%;">
+</p>
+<p align="center"><i>Kiến trúc Orchestrator và luồng đi lệnh Đa Tác nhân (Multi-Agent) của TradingAgents-Vn.</i></p>
+
+#### Giai đoạn 1: Điều Phối & Nhập Liệu (Orchestration & Data Ingestion)
+- **Orchestrator Agent (Điều phối viên):** Đóng vai trò tổng chỉ huy. Phân tích ý định của người dùng từ UI/Chat để quyết định hướng xử lý.
+- **Tra cứu nhanh:** Nếu người dùng cần xem biểu đồ, giá, hay thông tin vĩ mô, các **Quick Analysis Tools** sẽ trả kết quả ngay lập tức.
+- **Phân tích chuyên sâu:** Khi có yêu cầu đánh giá mã cổ phiếu, hệ thống chuyển giao (Handoff) cho **Propagator** khởi tạo quy trình phân tích sâu (Graph State).
+- **Data Agent VN:** Đội ngũ chuyên biệt (Browser Agent) tự động truy cập website gốc, thu thập, chuẩn hóa dữ liệu đa nguồn (Text, Table, Chart) mà không phụ thuộc vào API Key.
+
+#### Giai đoạn 2: Phân Tích Đa Chiều & Tranh Biện (Analyst Swarm & Investment Debate)
+- **Nhóm Phân Tích (Analyst Swarm):** Hoạt động song song với 4 Tác nhân chuyên môn:
+  - *Technical Analyst:* Đánh giá xu hướng, mô hình, chỉ báo (MA, RSI, MACD), hỗ trợ/kháng cự.
+  - *Fundamentals Analyst:* Báo cáo tài chính, định giá, tăng trưởng, cơ cấu cổ đông.
+  - *Sentiment Analyst:* Phân tích tâm lý thị trường, dòng tiền, tin đồn trên mạng xã hội.
+  - *News Analyst:* Tin tức vĩ mô, sự kiện doanh nghiệp, thông cáo chính thức.
+- **Tranh Biện Đầu Tư (Investment Debate):** Cơ chế lõi giúp triệt tiêu ảo giác (Hallucination). **Bull Researcher** (Phe Bò) và **Bear Researcher** (Phe Gấu) thực hiện tranh biện qua nhiều vòng có điều kiện để tìm ra cơ hội và rủi ro ẩn. 
+- **Research Manager (Thẩm phán):** Đánh giá các luận điểm, tổng hợp kết luận (Verdict) kèm mức độ tự tin.
+
+#### Giai đoạn 3: Quản Trị Rủi Ro & Thực Thi (Risk Evaluation & Execution)
+- **Trader Agent:** Xây dựng kịch bản giao dịch chi tiết: Điểm vào (Entry), Chốt lời (Take Profit), Cắt lỗ (Stop Loss) và Tỷ trọng (Position Size).
+- **Risk Management Team:** Đánh giá rủi ro qua 3 lăng kính: Tấn công (Aggressive), Trung lập (Neutral), Phòng thủ (Conservative) để thử tải (Stress test) kịch bản.
+- **Portfolio Manager (CIO):** Giám đốc danh mục kiểm soát rủi ro tổng thể và phê duyệt quyết định giao dịch cuối cùng: `BUY`, `HOLD` hoặc `SELL`.
+
+#### Giai đoạn 4: Tự Động Học Hỏi (Memory & Learning Loop)
+Hệ thống không tĩnh mà liên tục tiến hóa, đúc rút kinh nghiệm từ quá khứ:
+- **Trading Memory Log:** Lưu trữ lịch sử quyết định và P&L thực tế.
+- **Reflector Agent:** Đánh giá chất lượng, đối chiếu hiệu suất thực tế với Benchmark, tìm ra nguyên nhân thành công/thất bại.
+- **Context Injection:** Bơm kinh nghiệm đã được đúc kết vào Orchestrator, giúp các Tác nhân điều chỉnh niềm tin và cải thiện độ chuẩn xác cho các lần ra quyết định sau.
+
+#### Giai đoạn 5: Tổng Hợp & Báo Cáo (Synthesis & Reporting)
+- **Chief Editor (System):** Biên soạn Executive Summary tổng hợp khuyến nghị, phân tích rủi ro và dự báo 5 ngày tới.
+- Kết xuất chuẩn JSON, lưu vào bộ nhớ và hiển thị trực quan lên Dashboard, Reports cho người dùng theo dõi.
+
+<p align="center">
+  <img src="assets/vn/tradingagent-flow.png" width="100%" style="display: inline-block; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin: 0 2%;">
+</p>
+<p align="center"><i>Sơ đồ chi tiết luồng vận hành lõi: Thu thập dữ liệu Việt Nam, Tranh biện, Quản trị Rủi ro & Học hỏi liên tục.</i></p>
 
 ---
 
